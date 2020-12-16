@@ -1,7 +1,6 @@
 #include "emit-pkt.h"
 #include "FPGA-backend/common.h"
 #include "lib/exceptions.h"
-#include <ostream>
 
 
 namespace FPGA {
@@ -302,8 +301,16 @@ void EmitConfPkt::emitParserConf() {
 }
 
 void EmitConfPkt::emitStageConf() {
+	// get idx allocation for one vid
+	if (lkup_vid_to_idxrange.find(vid) == lkup_vid_to_idxrange.end()) {
+		BUG("no conf for vid %1%", vid);
+	}
+	int stg_idx = lkup_vid_to_idxrange[vid].first;
+	int stg_max = lkup_vid_to_idxrange[vid].second;
 	int stg_ind[5];
-	memset(stg_ind, 0, sizeof(stg_ind));
+	for (int i=0; i<5; i++) {
+		stg_ind[i] = stg_idx;
+	}
 	for(auto stg=0; stg<5; stg++) {
 		if (stg_conf[stg].flag) { // valid stg conf
 			printExtractorConf(stg_conf[stg].keyconf, outStream, stg, vid);
@@ -314,14 +321,55 @@ void EmitConfPkt::emitStageConf() {
 				printCAMConf(stg_conf[stg].camconf.at(i), outStream, stg, stg_ind[stg]);
 				printRAMConf(stg_conf[stg].ramconf.at(i), outStream, stg, stg_ind[stg]);
 				stg_ind[stg]++;
+				if (stg_ind[stg] > stg_max) {
+					BUG("stg ind larger than allocated %1%", stg_max);
+				}
 			}
 		}
 	}
 }
 
+void EmitConfPkt::buildConfIdx() {
+	std::ifstream confin;
+	confin.open(confFilename, std::ios::in);
+	if (!confin.is_open()) {
+		BUG("can not open conf file %1%", confFilename);
+	}
+
+	std::string type;
+	int n, vid, st, offset;
+
+	while (confin >> type) {
+		if (type == "lkupconf") {
+			confin >> n;
+			for (int i=0; i<n; i++) {
+				confin >> vid >> st >> offset;
+				lkup_vid_to_idxrange.emplace(vid, std::make_pair(st, offset));
+			}
+		}
+		else if (type == "statefulmem") {
+			confin >> n;
+			for (int i=0; i<n; i++) {
+				confin >> vid >> st >> offset;
+				stateful_vid_to_idxrange.emplace(vid, std::make_pair(st, offset));
+			}
+		}
+		else {
+			BUG("not supported conf %1%", type);
+		}
+	}
+
+	confin.close();
+}
+
 void EmitConfPkt::emitConfPkt() {
+	// first build index for lkup cam and ram
+	buildConfIdx();
+	// then emit
 	emitParserConf();
 	emitStageConf();
+
+	//
 	outStream.close();
 }
 

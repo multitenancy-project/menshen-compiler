@@ -55,6 +55,11 @@ int main(int argc, char *const argv[]) {
 		return 1;
 	}
 
+	if (options.confFilename==nullptr) {
+		::error("conf not set");
+		return 1;
+	}
+
 	auto hook = options.getDebugHook();
 
 	//

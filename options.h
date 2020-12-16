@@ -24,7 +24,7 @@ public:
 				},
 				"vlan id for this program.");
 
-		registerOption("--confile", "confile",
+		registerOption("--conffile", "conffile",
 				[this](const char* arg) {
 					confFilename = arg;
 					return true;

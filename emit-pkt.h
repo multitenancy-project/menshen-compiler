@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <utility>
 #include <iostream>
 #include <fstream>
 #include <sys/cdefs.h>
@@ -35,12 +36,17 @@ public:
 	virtual void emitConfPkt ();
 	virtual void emitParserConf();
 	virtual void emitStageConf();
+
+	virtual void buildConfIdx();
 	//
 
 	int vid;
 	cstring confFilename;
 	cstring outputfile;
 	std::ofstream outStream;
+	//
+	std::map<int, std::pair<int, int>> lkup_vid_to_idxrange;
+	std::map<int, std::pair<int, int>> stateful_vid_to_idxrange;
 	// 
 	std::map<cstring, int> fields_bitsize_from_start;
 	std::map<cstring, struct PHVContainer> hdr_phv_allocation;
