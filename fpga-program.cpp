@@ -14,7 +14,7 @@ bool FPGAProgram::build() {
 	auto hdrFieldsAccess = new HdrFieldsAccess(parserGraphs->state_extracted_type);
 	toplevel->getProgram()->apply(*hdrFieldsAccess);
 	hdrFieldsAccess->analyze();
-	// 
+	// build the control part
 	auto pack = toplevel->getMain();
 	auto cb = pack->findParameterValue(model.sw.ingress.name)->to<IR::ControlBlock>();
 	BUG_CHECK(cb!=nullptr, "no control block found");

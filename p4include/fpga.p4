@@ -7,6 +7,18 @@
 struct standard_metadata_t {
 }
 
+extern register<T>
+{
+	// create a array of 'size' identical elements, each with type T
+	register(bit<32> size);
+	// load a val
+	void load(out T result, in bit<32> index);
+	// store 
+	void store(in bit<32> index, in T value);
+	// load a val and store it back plus 1
+	void loadd(out T result, in bit<32> index);
+}
+
 // Architecture
 // M must be a strcut,
 // H must be a strcut where every memeber is of type header

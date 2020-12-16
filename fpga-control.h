@@ -14,6 +14,8 @@
 
 namespace FPGA {
 
+static const int MAX_NUM_SLOTS = 4;
+
 class FPGAControl;
 
 class ControlBodyProcess : public Inspector {
@@ -25,6 +27,7 @@ public:
 	}
 
 	bool preorder(const IR::MethodCallExpression* expression) override;
+	bool preorder(const IR::Declaration_Instance* decl_ins) override;
 	virtual void processApply(const P4::ApplyMethod* method);
 };
 
@@ -35,6 +38,7 @@ public:
 	const IR::ControlBlock *controlBlock;
 	HdrFieldsAccess *hdrAccess;
 
+	std::map<cstring, const IR::Type_Specialized*> applied_regs;
 	std::map<cstring, FPGATable*> tables;
 	std::vector<FPGATable*> applied_tables;
 

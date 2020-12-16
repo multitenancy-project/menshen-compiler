@@ -119,6 +119,39 @@ NormalOperation* ActionBodyProcess::process(const IR::AssignmentStatement* assig
 	return normal_op;
 }
 
+NormalOperation* ActionBodyProcess::process(const IR::MethodCallStatement* mcs) {
+	auto normal_op = new NormalOperation();
+	struct Operation op;
+
+	// methodcall like xx.yy()
+	if (mcs->methodCall->method->is<IR::Member>()) {
+		auto method_name = mcs->methodCall->method->to<IR::Member>()->member.name;
+		auto reg_name = mcs->methodCall->method->
+							to<IR::Member>()->expr->to<IR::PathExpression>()->path->name.name;
+
+		auto &applied_regs = table->program->control->applied_regs;
+		// if it is not a methodcall on register then return
+		if (applied_regs.find(reg_name) == applied_regs.end()) {
+			return nullptr;
+		}
+		// else
+		if (method_name == "load") {
+			// get args
+		}
+		else if (method_name == "store") {
+		}
+		else {
+			BUG("not supported method %1%", method_name);
+		}
+	}
+	else {
+		BUG("not supported methodcall %1%", mcs->methodCall);
+	}
+
+	return normal_op;
+}
+
+// TODO: if statement
 IfstatementOperation* ActionBodyProcess::process(const IR::IfStatement* ifs) {
 	auto if_stat_op = new IfstatementOperation();
 
@@ -135,6 +168,12 @@ bool ActionBodyProcess::preorder(const IR::BlockStatement *blkstat) {
 		}
 		else if (component->is<IR::AssignmentStatement>()) {
 			operations.push_back(process(component->to<IR::AssignmentStatement>()));
+		}
+		else if (component->is<IR::MethodCallStatement>()) {
+			auto op_mcs = process(component->to<IR::MethodCallStatement>());
+			if (op_mcs != nullptr) {
+				operations.push_back(op_mcs);
+			}
 		}
 		// not supported
 		else {
@@ -428,6 +467,7 @@ int FPGATable::emitRAMConf(const IR::PathExpression* act, struct StageConf *stg_
 			prev_stg_conf[res_pos] = stg_op;
 			ed_stg = stg_op;
 		}
+		// TODO: conditional statement op
 		else {
 			BUG("not supported op now");
 		}

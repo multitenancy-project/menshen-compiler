@@ -22,13 +22,52 @@ bool ControlBodyProcess::preorder(const IR::MethodCallExpression* expression) {
 	return false;
 }
 
+bool ControlBodyProcess::preorder(const IR::Declaration_Instance* decl_ins) {
+	auto type = decl_ins->type->to<IR::Type_Specialized>();
+
+	if (type == nullptr) {
+		return false;
+	}
+
+	// check register definition
+	if (type->baseType->path->name.name == "register") {
+		auto element_type = type->arguments->at(0); // we only have 1 arg
+
+		// check element type
+		if (element_type->is<IR::Type_Bits>()) {
+			auto bit_type = element_type->to<IR::Type_Bits>();
+			if (bit_type->size != 32) {
+				BUG("not supported element size %1%", bit_type->size);
+			}
+		}
+		else {
+			BUG("not supported type %1%", element_type);
+		}
+		// check #slots
+		auto arg_0 = decl_ins->arguments->at(0);
+		if (arg_0->expression->is<IR::Constant>()) {
+			auto num_slots = arg_0->expression->to<IR::Constant>()->value.convert_to<int>();
+			if (num_slots > MAX_NUM_SLOTS) {
+				BUG("not supported #slots %1%", num_slots);
+			}
+		}
+		else {
+			BUG("not supported expr %1%", arg_0->expression);
+		}
+
+		control->applied_regs.emplace(decl_ins->Name(), type);
+	}
+
+	return false;
+}
+
 void ControlBodyProcess::processApply(const P4::ApplyMethod* method) {
 	auto table = control->getTable(method->object->getName().name);
 	BUG_CHECK(table!=nullptr, "no table for %1%", method->expr);
 	control->applied_tables.push_back(table);
 }
 
-
+//=====================================================================================
 
 FPGAControl::FPGAControl(const FPGAProgram* program, const IR::ControlBlock* ctrlBlock, 
 							HdrFieldsAccess* access) :
@@ -47,14 +86,22 @@ FPGAControl::FPGAControl(const FPGAProgram* program, const IR::ControlBlock* ctr
 }
 
 bool FPGAControl::build() {
+	// check how many regs are used
+	if (applied_regs.size() > 1) {
+		BUG("#applied regs > 1");
+	}
+	//
 	auto ctrlBodyProcess = new ControlBodyProcess(this);
 	controlBlock->container->body->apply(*ctrlBodyProcess);
-	
+
+	// get applied tables
 	for (auto k : applied_tables) {
 		std::cout << k->table->container->getName().name << std::endl;
+		// build for each table
 		k->build();
 	}
 
+	// emit configuration for each table
 	int st_stg = 0;
 	int nxt_st_stg = -1;
 	for (auto k : applied_tables) {
