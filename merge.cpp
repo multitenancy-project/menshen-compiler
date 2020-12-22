@@ -1,4 +1,8 @@
+#include <stdio.h>
+
 #include "lib/exceptions.h"
+
+
 
 #include "merge.h"
 
@@ -11,6 +15,7 @@ bool Merger::preorder(IR::P4Control *ctrl) {
 	// std::cout << "hhhhhhh\n";
 	// std::cout << cb->container << std::endl;
 	// BUG_CHECK(ctrl==cb->container, "is something wrong here?");
+	// printf("%p %p %p\n", ctrl, cb->container, cb);
 
 	for (size_t i=1; i<mg->progs.size(); i++) {
 		auto prog_ctrl = mg->toplevels.at(i)->getMain()->findParameterValue(mg->model.sw.ingress.name)
@@ -60,8 +65,6 @@ bool MergeProgs::merge() {
 		// 	return false;
 		// }
 
-		std::cout << "iiiiiii\n";
-
 		P4::ReferenceMap refMap;
 		P4::TypeMap typeMap;
 		P4::ParseAnnotations parseAnnotations;
@@ -87,7 +90,6 @@ bool MergeProgs::merge() {
 		toplevels.push_back(toplevel);
 	}
 
-	std::cout << "i am done here\n";
 
 	// do the merging
 	auto merger = new Merger(this);

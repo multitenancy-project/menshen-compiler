@@ -98,23 +98,61 @@ NormalOperation* ActionBodyProcess::process(const IR::AssignmentStatement* assig
 	auto normal_op = new NormalOperation();
 	struct Operation op;
 	// process left
-	cstring l_field;
+	cstring l_field, r_field;
 	auto l_val = process_expr(assignstat->left, l_field);
 	if (l_val == -1) {
 		auto &hdr_phv_allocation = table->program->control->hdrAccess->hdr_phv_allocation;
 		auto hdr_itr = hdr_phv_allocation.find(l_field);
-		BUG_CHECK(hdr_itr!=hdr_phv_allocation.end(), "no hdr field exists");
-		op.op_res = hdr_phv_allocation[l_field];
+		auto md_itr = const_std_metadata.find(l_field);
+		if (hdr_itr != hdr_phv_allocation.end()) {
+			// op on hdr phv
+			op.op_res_type = OP_TYPE_PHV;
+			op.op_res = hdr_phv_allocation[l_field];
+		}
+		else if (md_itr != const_std_metadata.end()) {
+			// op on metadata
+			op.op_res_type = OP_TYPE_MD;
+		}
+		else {
+			BUG("not supported lval");
+		}
 	}
 	else {
-		BUG("not possible left side");
+		BUG("not supported left side");
 	}
 	// process right
-	auto r_expr = assignstat->right;
-	if (!r_expr->is<IR::Operation_Binary>()) {
-		BUG("not supported %1%", r_expr);
+	if (op.op_res_type == OP_TYPE_PHV) {
+		auto r_expr = assignstat->right;
+		if (!r_expr->is<IR::Operation_Binary>()) {
+			BUG("not supported %1%", r_expr);
+		}
+		process_expr(r_expr->to<IR::Operation_Binary>(), op);
 	}
-	process_expr(r_expr->to<IR::Operation_Binary>(), op);
+	else if (op.op_res_type == OP_TYPE_MD) {
+		auto r_expr = assignstat->right;
+		auto r_val = process_expr(r_expr, r_field);
+		if (r_val != -1) {
+			if (l_field == "port") {
+				op.type = OP_PORT;
+				uint32_t val = r_val;
+				op.metadata_op = (val<<13) & 0b0000111111110000000000000;
+			}
+			else if (l_field == "discard") {
+				op.type = OP_DISCARD;
+				uint32_t val = r_val;
+				op.metadata_op = (val<<12) & 0b0000000000001000000000000;
+			}
+			else {
+				BUG("not supported metadata %1%", l_field);
+			}
+		}
+		else {
+			BUG("not supported");
+		}
+	}
+	else {
+		BUG("not possible op res type %1%", op.op_res_type);
+	}
 	normal_op->op = op;
 	normal_op->op_valid = true;
 	return normal_op;
@@ -155,7 +193,7 @@ inline void setOperation(std::map<cstring, struct PHVContainer> &hdr_phv_allocat
 	op.phv_op = hdr_phv_allocation[idx_field];
 }
 
-
+// for stateful memory operations
 NormalOperation* ActionBodyProcess::process(const IR::MethodCallStatement* mcs) {
 	auto &hdr_phv_allocation = table->program->control->hdrAccess->hdr_phv_allocation;
 	cstring val_field, idx_field;
@@ -314,7 +352,7 @@ bool FPGATable::emitKeyConf() {
 			}
 			else if (phv_2B_ind==1) {
 				keyConf.op_2B_2 = phv_allocation.pos;
-				keyConf.validity_flag = keyConf.validity_flag | ((int)1 << 1 & 0b000001);
+				keyConf.validity_flag = keyConf.validity_flag | ((int)1 << 0 & 0b000001);
 				phv_2B_ind++;
 				keyInConf.emplace(k, 2);
 			}
@@ -325,7 +363,7 @@ bool FPGATable::emitKeyConf() {
 		else if (phv_allocation.type == PHV_CON_4B) {
 			if (phv_4B_ind==0) {
 				keyConf.op_2B_1 = phv_allocation.pos;
-				keyConf.validity_flag = keyConf.validity_flag | ((int)1 << 2 & 0b001000);
+				keyConf.validity_flag = keyConf.validity_flag | ((int)1 << 3 & 0b001000);
 				phv_4B_ind++;
 				keyInConf.emplace(k, 1);
 			}
@@ -342,7 +380,7 @@ bool FPGATable::emitKeyConf() {
 		else if (phv_allocation.type == PHV_CON_6B) {
 			if (phv_6B_ind==0) {
 				keyConf.op_6B_1 = phv_allocation.pos;
-				keyConf.validity_flag = keyConf.validity_flag | ((int)1 << 4 & 0b100000);
+				keyConf.validity_flag = keyConf.validity_flag | ((int)1 << 5 & 0b100000);
 				phv_6B_ind++;
 				keyInConf.emplace(k, 1);
 			}
@@ -458,6 +496,9 @@ int FPGATable::emitRAMConf(const IR::PathExpression* act, struct StageConf *stg_
 		BUG("no action operations");
 	}
 	auto act_ops = act_operations[act];
+	if (act_ops.size() == 0) {
+		BUG("empty action is not supported now");
+	}
 
 	int prev_stg_conf[25];
 	for (int i=0; i<25; i++) {
@@ -488,8 +529,35 @@ int FPGATable::emitRAMConf(const IR::PathExpression* act, struct StageConf *stg_
 			int res_pos, op_a_pos, op_b_pos=-1;
 			int res_stg, op_a_stg, op_b_stg=-1;
 			auto normal_op = static_cast<NormalOperation *>(op);
+			// std metadata
+			if (normal_op->op.type==OP_DISCARD||
+					normal_op->op.type==OP_PORT) {
+				int op_pos = 24; // specific for metadata
+				int op_stg = prev_stg_conf[op_pos]+1;
+				auto one_ram_conf = &ram_conf[op_stg][op_pos];
+				modified_stg[op_stg] = true;
+				one_ram_conf->flag = 1;
+				switch (normal_op->op.type) {
+					case OP_PORT:
+						one_ram_conf->op_type = OP_PORT_BIN;
+						break;
+					case OP_DISCARD:
+						one_ram_conf->op_type = OP_DISCARD_BIN;
+						break;
+					default:
+						break;
+				}
+				one_ram_conf->op_a = (normal_op->op.metadata_op>>16) & 0b11111;
+				one_ram_conf->op_b = (normal_op->op.metadata_op) & 0xffff;
+				// update prev stage
+				prev_stg_conf[res_pos] = op_stg;
+				ed_stg = op_stg;
+				if (op_idx==0) {
+					st_stg = op_stg;
+				}
+			}
 			// stateful memory operations
-			if (normal_op->op.type==OP_LOAD||
+			else if (normal_op->op.type==OP_LOAD||
 					normal_op->op.type==OP_STORE||
 					normal_op->op.type==OP_LOADD) {
 				if (!stateful_op_exist) {
@@ -635,8 +703,6 @@ bool FPGATable::emitConf(struct StageConf *stg_conf, int &st_stg, int &nxt_st_st
 		if (nxt_st_stg < ed_stg) {
 			nxt_st_stg = ed_stg;
 		}
-		std::cout << entry.first;
-		std::cout << st_stg << " " << ed_stg << " " << nxt_st_stg << std::endl;
 		for (auto stg=st_stg; stg<ed_stg; stg++) {
 			stg_conf[stg].flag = 1;
 			stg_conf[stg].keyconf = keyConf;

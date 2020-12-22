@@ -93,7 +93,7 @@ void ParserGraphs::postorder(const IR::MethodCallStatement* mcs) {
 
 
 //====================================================================================
-// Tao: get visited header fields
+// Tao: get visited header fields, some may be metadata
 bool HdrFieldsAccess::preorder(const IR::Member* member) {
 	if (visited_fields.find(member->member.name) == visited_fields.end()) {
 		visited_fields.insert(member->member.name);
@@ -102,6 +102,7 @@ bool HdrFieldsAccess::preorder(const IR::Member* member) {
 }
 
 void HdrFieldsAccess::analyze() {
+	// calculate hdr fields and correspoding sizes
 	for (auto hdr : extracted_hdrs) {
 		for (auto sf : hdr->fields) {
 			hdr_fields.push_back(sf->name.name);

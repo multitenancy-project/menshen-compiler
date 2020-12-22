@@ -51,9 +51,6 @@ int main(int argc, char *const argv[]) {
 
 	std::vector<const IR::P4Program*> progs = FPGA::parseInputFiles(options);
 	if (options.merge_file != -1) {
-		// Tao:
-		// have to merge first and then do the fpga backend thing
-		std::cout << "i am here\n";
 		auto mg = new FPGA::MergeProgs(progs, options);
 		if (mg->merge() == false) {
 			BUG("merge error");

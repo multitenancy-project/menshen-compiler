@@ -20,6 +20,8 @@
 #define OP_LOAD 5
 #define OP_STORE 6
 #define OP_LOADD 7
+#define OP_PORT 8
+#define OP_DISCARD 9
 
 #define OP_ADD_BIN 0b0001
 #define OP_SUB_BIN 0b0010
@@ -28,11 +30,13 @@
 #define OP_LOAD_BIN 0b1011
 #define OP_STORE_BIN 0b1000
 #define OP_LOADD_BIN 0b0111
+#define OP_PORT_BIN 0b1100
+#define OP_DISCARD_BIN 0b1101
 
 #define OP_TYPE_PHV 1
 #define OP_TYPE_INT 2
 #define OP_TYPE_ARG 3
-
+#define OP_TYPE_MD 4
 
 #define MAX_NUM_STAGES 5
 
@@ -43,6 +47,8 @@
 #include "ir/ir.h"
 
 namespace FPGA {
+
+const std::set<cstring> const_std_metadata = {"port","discard"};
 
 struct PHVContainer {
 	uint8_t type: 2;
@@ -65,6 +71,7 @@ struct Condition {
 
 struct Operation {
 	int type;
+	int op_res_type;
 	struct PHVContainer op_res;
 	struct PHVContainer op_a;
 	int op_b_type;
@@ -72,6 +79,7 @@ struct Operation {
 	struct PHVContainer phv_op;
 	int int_op;
 	cstring arg_op;
+	uint32_t metadata_op;
 };
 
 class BaseOperation {

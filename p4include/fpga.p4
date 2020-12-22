@@ -5,6 +5,8 @@
 
 @metadata @name("standard_metadata")
 struct standard_metadata_t {
+	bit<32>		port;
+	bit<1>		discard;
 }
 
 extern register<T>
