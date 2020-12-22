@@ -315,7 +315,10 @@ void EmitConfPkt::emitStageConf() {
 		if (stg_conf[stg].flag) { // valid stg conf
 			printExtractorConf(stg_conf[stg].keyconf, outStream, stg, vid);
 			if (stg_conf[stg].camconf.size() != stg_conf[stg].ramconf.size()) {
-				BUG("size of cam and ram conf should be equal");
+				BUG("size of cam and ram conf should be equal stg[%1%], %2%, %3%",
+						stg,
+						stg_conf[stg].camconf.size(),
+						stg_conf[stg].ramconf.size());
 			}
 			for (size_t i=0; i<stg_conf[stg].camconf.size(); i++) {
 				printCAMConf(stg_conf[stg].camconf.at(i), outStream, stg, stg_ind[stg]);
@@ -360,6 +363,23 @@ void EmitConfPkt::buildConfIdx() {
 	}
 
 	confin.close();
+}
+
+void EmitConfPkt::emitStatefulConf() {
+	// first read index info
+	buildConfIdx();
+	for (auto k : stateful_vid_to_idxrange) {
+		uint8_t st, offset;
+		outStream << "StatefulIdxConf ";
+		printStageInd(outStream, MODULE_ACTION_ENGINE, 2, k.first, 0, 0);
+		st = k.second.first;
+		offset = k.second.second;
+		printBits(sizeof(uint8_t), &offset, outStream);
+		printBits(sizeof(uint8_t), &st, outStream);
+		outStream << "\n";
+	}
+
+	outStream.close();
 }
 
 void EmitConfPkt::emitConfPkt() {

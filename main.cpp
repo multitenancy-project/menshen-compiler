@@ -32,7 +32,9 @@
 
 // 
 #include "options.h"
+#include "merge.h"
 #include "fpga-backend.h"
+#include "parse-input-files.h"
 
 int main(int argc, char *const argv[]) {
 	setup_gc_logging();
@@ -42,8 +44,23 @@ int main(int argc, char *const argv[]) {
 
 	options.langVersion = CompilerOptions::FrontendVersion::P4_16;
 
+	// set input files and check some options
 	if (options.process(argc, argv) != nullptr) {
 		options.setInputFile();
+	}
+
+	std::vector<const IR::P4Program*> progs = FPGA::parseInputFiles(options);
+	if (options.merge_file != -1) {
+		// Tao:
+		// have to merge first and then do the fpga backend thing
+		std::cout << "i am here\n";
+		auto mg = new FPGA::MergeProgs(progs, options);
+		if (mg->merge() == false) {
+			BUG("merge error");
+			exit(1);
+		}
+		mg->output();
+		return 0;
 	}
 
 	if (::errorCount() > 0) {
@@ -60,8 +77,53 @@ int main(int argc, char *const argv[]) {
 		return 1;
 	}
 
-	auto hook = options.getDebugHook();
+	if (options.if_stateful_only!=-1) {
+		// generate stateful conf pkt only
+		FPGA::run_generate_stateful_conf(options);
+		return 0;
+	}
+	// 
 
+	auto hook = options.getDebugHook();
+	
+	// do the backend processing
+	const IR::P4Program* program = nullptr;
+	const IR::ToplevelBlock* toplevel = nullptr;
+
+	program = progs.at(0);
+	BUG_CHECK(program!=nullptr, "nullptr program");
+
+	P4::P4COptionPragmaParser optionsPragmaParser;
+	program->apply(P4::ApplyOptionsPragmas(optionsPragmaParser));
+
+	P4::FrontEnd frontend;
+	frontend.addDebugHook(hook);
+	program = frontend.run(options, program);
+
+	P4::ReferenceMap refMap;
+	P4::TypeMap typeMap;
+	P4::ParseAnnotations parseAnnotations;
+	refMap.setIsV1(options.isv1());
+
+	auto evaluator = new P4::EvaluatorPass(&refMap, &typeMap);
+	PassManager passes = {
+		// new P4::ParseAnnotationBodies(&parseAnnotations, &typeMap),
+		// new P4::ValidateParsedProgram(),
+		// new P4::CreateBuiltins(),
+		new P4::ResolveReferences(&refMap),
+		new P4::TypeInference(&refMap, &typeMap, false),
+		evaluator};
+
+	program = program->apply(passes);
+	LOG3(refMap);
+	LOG3(typeMap);
+	LOG3(evaluator->getToplevelBlock());
+	toplevel = evaluator->getToplevelBlock();
+
+	// parser graphs
+	FPGA::run_fpga_backend(options, toplevel, &refMap, &typeMap);
+
+#if 0
 	//
 	const IR::P4Program* program = nullptr;
 	const IR::ToplevelBlock* toplevel = nullptr;
@@ -116,6 +178,7 @@ int main(int argc, char *const argv[]) {
 	// std::cout << ingress << std::endl;
 	// auto ingress_name = ingress->to<IR::ControlBlock>()->container->name;
 	// std::cout << ingress_name << std::endl;
+#endif
 
     return 0;
 }

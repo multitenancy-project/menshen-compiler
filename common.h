@@ -17,11 +17,17 @@
 #define OP_SUB 2
 #define OP_ADDI 3
 #define OP_SUBI 4
+#define OP_LOAD 5
+#define OP_STORE 6
+#define OP_LOADD 7
 
 #define OP_ADD_BIN 0b0001
 #define OP_SUB_BIN 0b0010
 #define OP_ADDI_BIN 0b1001
 #define OP_SUBI_BIN 0b1010
+#define OP_LOAD_BIN 0b1011
+#define OP_STORE_BIN 0b1000
+#define OP_LOADD_BIN 0b0111
 
 #define OP_TYPE_PHV 1
 #define OP_TYPE_INT 2
@@ -71,6 +77,7 @@ struct Operation {
 class BaseOperation {
 public:
 	int type; // 
+	bool op_valid;
 
 	BaseOperation() {
 	}
@@ -80,6 +87,7 @@ class IfstatementOperation : public BaseOperation {
 public:
 	IfstatementOperation () {
 		type = TYPE_IF_OP;
+		op_valid = false;
 	}
 	struct Condition cond;
 	std::vector<BaseOperation *> Iftrue;
@@ -90,6 +98,7 @@ class NormalOperation : public BaseOperation {
 public:
 	NormalOperation () {
 		type = TYPE_NORMAL_OP;
+		op_valid = false;
 	}
 	struct Operation op;
 };

@@ -32,13 +32,23 @@ public:
 		}
 	}
 
+	EmitConfPkt (cstring filename, cstring outputfile) :
+					confFilename(filename), outputfile(outputfile) {
+
+		outStream.open(outputfile, std::ios::out);
+		if (!outStream.is_open()) {
+			BUG("can not open %1%", outputfile);
+		}
+	}
+
 	// functions to generate configuration packets
 	virtual void emitConfPkt ();
 	virtual void emitParserConf();
 	virtual void emitStageConf();
 
 	virtual void buildConfIdx();
-	//
+	// generate stateful conf only
+	virtual void emitStatefulConf();
 
 	int vid;
 	cstring confFilename;

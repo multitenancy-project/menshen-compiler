@@ -28,6 +28,9 @@ public:
 
 	bool preorder(const IR::MethodCallExpression* expression) override;
 	bool preorder(const IR::Declaration_Instance* decl_ins) override;
+	// just ignore them
+	bool preorder(const IR::P4Action*) { return false; }
+	bool preorder(const IR::P4Table*) { return false; }
 	virtual void processApply(const P4::ApplyMethod* method);
 };
 

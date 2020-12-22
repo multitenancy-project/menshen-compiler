@@ -4,6 +4,7 @@
 
 #include <cstdlib>
 #include <getopt.h>
+#include <vector>
 #include "frontends/common/options.h"
 
 
@@ -13,8 +14,12 @@ class FPGAOptions : public CompilerOptions {
 public:
 
 	int vid = -1;
+	int if_stateful_only = -1;
+	int merge_file = -1;
 	cstring confFilename;
 	cstring outputfile;
+
+	std::vector<cstring> files;
 
 	FPGAOptions() {
 		registerOption("--vid", "vid", 
@@ -23,6 +28,20 @@ public:
 					return true;
 				},
 				"vlan id for this program.");
+
+		registerOption("--statefulconf", "statefulconf",
+				[this](const char* arg) {
+					if_stateful_only = std::atoi(arg);
+					return true;
+				},
+				"whether to generate stateful conf only.");
+
+		registerOption("--mergefile", "mergefile",
+				[this](const char* arg) {
+					merge_file = std::atoi(arg);
+					return true;
+				},
+				"whether to merge file only.");
 
 		registerOption("--conffile", "conffile",
 				[this](const char* arg) {
@@ -38,6 +57,11 @@ public:
 				},
 				"output file for control plane pkts.");
 	}
+
+	//
+	void setInputFile();
+	FILE* preprocess(cstring file);
+	void closeInput(FILE* inputStream, bool if_close) const;
 };
 
 using FPGAContext = P4CContextWithOptions<FPGAOptions>;

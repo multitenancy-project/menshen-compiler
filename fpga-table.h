@@ -67,8 +67,8 @@ public:
 
 	bool emitKeyConf();
 	struct LookupCAMConf emitCAMConf(const IR::ListExpression* list_expr);
-	int emitRAMConf(const IR::PathExpression* act, struct StageConf *stg_conf, int st_stg);
-	bool emitConf(struct StageConf * stg_conf, int st_stg, int &nxt_st_stg);
+	int emitRAMConf(const IR::PathExpression* act, struct StageConf *stg_conf, int &st_stg);
+	bool emitConf(struct StageConf * stg_conf, int &st_stg, int &nxt_st_stg);
 	// --> generate entry in KeyExtractor
 	std::vector<cstring> keys;
 	// --> generate entry in CAM in lookup (i.e., Matched Key)

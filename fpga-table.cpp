@@ -116,10 +116,51 @@ NormalOperation* ActionBodyProcess::process(const IR::AssignmentStatement* assig
 	}
 	process_expr(r_expr->to<IR::Operation_Binary>(), op);
 	normal_op->op = op;
+	normal_op->op_valid = true;
 	return normal_op;
 }
 
+inline void setPHVAllocTo4B7(PHVContainer *phv_cond) {
+	if (phv_cond->type!=PHV_CON_4B) {
+		BUG("previous phv allocation may be wrong");
+	}
+	else {
+		if (phv_cond->pos!=7) { // phv 4B 7 is used for stateful memory operation
+			phv_cond->pos = 7;
+		}
+	}
+}
+
+inline void setOperation(std::map<cstring, struct PHVContainer> &hdr_phv_allocation,
+		struct Operation &op, cstring& val_field, cstring& idx_field, int op_type) {
+
+	// process val
+	auto hdr_val_field = hdr_phv_allocation.find(val_field);
+	if (hdr_val_field == hdr_phv_allocation.end()) {
+		BUG("no allocation for hdr field %1%", val_field);
+	}
+	// if it not allocated to phv 4B 7, then modify it
+	setPHVAllocTo4B7(&hdr_phv_allocation[val_field]);
+
+	op.type = op_type;
+	op.op_a = hdr_phv_allocation[val_field];
+
+	// process index
+	auto hdr_idx_field = hdr_phv_allocation.find(idx_field);
+	if (hdr_idx_field == hdr_phv_allocation.end()) {
+		BUG("no allocation for hdr fiedl %1%", idx_field);
+	}
+
+	op.op_b_type = OP_TYPE_PHV;
+	op.phv_op = hdr_phv_allocation[idx_field];
+}
+
+
 NormalOperation* ActionBodyProcess::process(const IR::MethodCallStatement* mcs) {
+	auto &hdr_phv_allocation = table->program->control->hdrAccess->hdr_phv_allocation;
+	cstring val_field, idx_field;
+	int val_val, idx_val;
+
 	auto normal_op = new NormalOperation();
 	struct Operation op;
 
@@ -135,10 +176,35 @@ NormalOperation* ActionBodyProcess::process(const IR::MethodCallStatement* mcs) 
 			return nullptr;
 		}
 		// else
+		auto arg_0 = mcs->methodCall->arguments->at(0);
+		auto arg_1 = mcs->methodCall->arguments->at(1);
 		if (method_name == "load") {
 			// get args
+			val_val = process_expr(arg_0->expression, val_field);
+			idx_val = process_expr(arg_1->expression, idx_field);
+
+			BUG_CHECK(val_val==-1&&idx_val==-1, "impossible val %1% idx %2%", val_field, idx_field);
+
+			setOperation(hdr_phv_allocation, op, val_field, idx_field, OP_LOAD);
 		}
 		else if (method_name == "store") {
+			std::cout << "processing store\n";
+			// get args
+			val_val = process_expr(arg_1->expression, val_field);
+			idx_val = process_expr(arg_0->expression, idx_field);
+
+			BUG_CHECK(val_val==-1&&idx_val==-1, "impossible val %1% idx %2%", val_field, idx_field);
+
+			setOperation(hdr_phv_allocation, op, val_field, idx_field, OP_STORE);
+		}
+		else if (method_name == "loadd") {
+			// get args
+			val_val = process_expr(arg_0->expression, val_field);
+			idx_val = process_expr(arg_1->expression, idx_field);
+
+			BUG_CHECK(val_val==-1&&idx_val==-1, "impossible val %1% idx %2%", val_field, idx_field);
+
+			setOperation(hdr_phv_allocation, op, val_field, idx_field, OP_LOADD);
 		}
 		else {
 			BUG("not supported method %1%", method_name);
@@ -148,6 +214,8 @@ NormalOperation* ActionBodyProcess::process(const IR::MethodCallStatement* mcs) 
 		BUG("not supported methodcall %1%", mcs->methodCall);
 	}
 
+	normal_op->op = op;
+	normal_op->op_valid = true;
 	return normal_op;
 }
 
@@ -171,7 +239,7 @@ bool ActionBodyProcess::preorder(const IR::BlockStatement *blkstat) {
 		}
 		else if (component->is<IR::MethodCallStatement>()) {
 			auto op_mcs = process(component->to<IR::MethodCallStatement>());
-			if (op_mcs != nullptr) {
+			if (op_mcs!=nullptr && op_mcs->op_valid) {
 				operations.push_back(op_mcs);
 			}
 		}
@@ -383,7 +451,7 @@ static inline int get_phv_index(struct PHVContainer &phv_con) {
 	return ret;
 }
 
-int FPGATable::emitRAMConf(const IR::PathExpression* act, struct StageConf *stg_conf, int st_stg) {
+int FPGATable::emitRAMConf(const IR::PathExpression* act, struct StageConf *stg_conf, int &st_stg) {
 	int ed_stg = st_stg;
 
 	if (act_operations.find(act) == act_operations.end()) {
@@ -412,65 +480,129 @@ int FPGATable::emitRAMConf(const IR::PathExpression* act, struct StageConf *stg_
 	}
 	memset(modified_stg, false, sizeof(modified_stg));
 
+	// validity check flag, we can only support 1 stateful memory op per packet
+	bool stateful_op_exist = false;
+	int op_idx = 0;
 	for (auto op : act_ops) {
 		if (op->type == TYPE_NORMAL_OP) {
 			int res_pos, op_a_pos, op_b_pos=-1;
 			int res_stg, op_a_stg, op_b_stg=-1;
 			auto normal_op = static_cast<NormalOperation *>(op);
-			res_pos = get_phv_index(normal_op->op.op_res);
-			res_stg = prev_stg_conf[res_pos]+1;
-			op_a_pos = get_phv_index(normal_op->op.op_a);
-			op_a_stg = prev_stg_conf[op_a_pos]+1;
-			if (normal_op->op.type==OP_ADD ||
-					normal_op->op.type==OP_SUB) {
+			// stateful memory operations
+			if (normal_op->op.type==OP_LOAD||
+					normal_op->op.type==OP_STORE||
+					normal_op->op.type==OP_LOADD) {
+				if (!stateful_op_exist) {
+					stateful_op_exist = true;
+				}
+				else {
+					BUG("can only support 1 stateful memory op per packet");
+				}
+				op_a_pos = get_phv_index(normal_op->op.op_a);
+				op_a_stg = 2; // stg 3 for stateful memory operation
 				op_b_pos = get_phv_index(normal_op->op.phv_op);
 				op_b_stg = prev_stg_conf[op_b_pos]+1;
-			}
 
-			//
-			int stg_op = res_stg;
-			stg_op = stg_op<op_a_stg?op_a_stg:stg_op;
-			stg_op = stg_op<op_b_stg?op_b_stg:stg_op;
-
-			auto one_ram_conf = &ram_conf[stg_op][res_pos];
-			modified_stg[stg_op] = true;
-			one_ram_conf->flag = 1;
-			switch (normal_op->op.type) {
-				case OP_ADD:
-					one_ram_conf->op_type = OP_ADD_BIN;
-					break;
-				case OP_SUB:
-					one_ram_conf->op_type = OP_SUB_BIN;
-					break;
-				case OP_ADDI:
-					one_ram_conf->op_type = OP_ADDI_BIN;
-					break;
-				case OP_SUBI:
-					one_ram_conf->op_type = OP_SUBI_BIN;
-					break;
-				default:
-					break;
-			}
-			// op_a is a phv
-			one_ram_conf->op_a = normal_op->op.op_a.type << 3 | normal_op->op.op_a.pos;
-			// op_b
-			if (normal_op->op.op_b_type == OP_TYPE_PHV) {
-				one_ram_conf->op_b = (normal_op->op.phv_op.type << 3 | normal_op->op.phv_op.pos)<<11;
-			}
-			else if (normal_op->op.op_b_type == OP_TYPE_INT) {
-				one_ram_conf->op_b = normal_op->op.int_op;
+				if (op_b_stg > op_a_stg) {
+					BUG("can not support this op");
+				}
+				//
+				int stg_op = op_a_stg;
+				stg_op = stg_op<op_b_stg?op_b_stg:stg_op;
+				auto one_ram_conf = &ram_conf[stg_op][op_a_pos];
+				modified_stg[stg_op] = true;
+				one_ram_conf->flag = 1;
+				switch (normal_op->op.type) {
+					case OP_LOAD:
+						one_ram_conf->op_type = OP_LOAD_BIN;
+						break;
+					case OP_STORE:
+						one_ram_conf->op_type = OP_STORE_BIN;
+						break;
+					case OP_LOADD:
+						one_ram_conf->op_type = OP_LOADD_BIN;
+						break;
+					default:
+						BUG("not supported op");
+						break;
+				}
+				// op_a is val
+				one_ram_conf->op_a = normal_op->op.op_a.type << 3 | normal_op->op.op_a.pos;
+				// op_b is index
+				one_ram_conf->op_b = (normal_op->op.phv_op.type << 3 | normal_op->op.phv_op.pos)<<11; // to 16-bit width
+				// update prev stage
+				if (normal_op->op.type==OP_LOAD||
+						normal_op->op.type==OP_LOADD) {
+					prev_stg_conf[op_a_pos] = stg_op;
+				}
+				ed_stg = stg_op;
+				if (op_idx==0) {
+					st_stg = stg_op;
+				}
 			}
 			else {
-				BUG("wrong op_b type");
+				res_pos = get_phv_index(normal_op->op.op_res);
+				res_stg = prev_stg_conf[res_pos]+1;
+				op_a_pos = get_phv_index(normal_op->op.op_a);
+				op_a_stg = prev_stg_conf[op_a_pos]+1;
+				if (normal_op->op.type==OP_ADD ||
+						normal_op->op.type==OP_SUB) {
+					op_b_pos = get_phv_index(normal_op->op.phv_op);
+					op_b_stg = prev_stg_conf[op_b_pos]+1;
+				}
+
+				//
+				int stg_op = res_stg;
+				stg_op = stg_op<op_a_stg?op_a_stg:stg_op;
+				stg_op = stg_op<op_b_stg?op_b_stg:stg_op;
+
+				auto one_ram_conf = &ram_conf[stg_op][res_pos];
+				modified_stg[stg_op] = true;
+				one_ram_conf->flag = 1;
+				switch (normal_op->op.type) {
+					case OP_ADD:
+						one_ram_conf->op_type = OP_ADD_BIN;
+						break;
+					case OP_SUB:
+						one_ram_conf->op_type = OP_SUB_BIN;
+						break;
+					case OP_ADDI:
+						one_ram_conf->op_type = OP_ADDI_BIN;
+						break;
+					case OP_SUBI:
+						one_ram_conf->op_type = OP_SUBI_BIN;
+						break;
+					default:
+						BUG("not supported op");
+						break;
+				}
+				// op_a is a phv
+				one_ram_conf->op_a = normal_op->op.op_a.type << 3 | normal_op->op.op_a.pos;
+				// op_b
+				if (normal_op->op.op_b_type == OP_TYPE_PHV) {
+					one_ram_conf->op_b = (normal_op->op.phv_op.type << 3 | normal_op->op.phv_op.pos)<<11;
+				}
+				else if (normal_op->op.op_b_type == OP_TYPE_INT) {
+					one_ram_conf->op_b = normal_op->op.int_op;
+				}
+				else {
+					BUG("wrong op_b type");
+				}
+				// update prev stage
+				prev_stg_conf[res_pos] = stg_op;
+				ed_stg = stg_op;
+				if (op_idx==0) {
+					st_stg = stg_op;
+				}
 			}
-			// update prev stage
-			prev_stg_conf[res_pos] = stg_op;
-			ed_stg = stg_op;
 		}
 		// TODO: conditional statement op
 		else {
 			BUG("not supported op now");
 		}
+
+		// update op_idx
+		op_idx++;
 	}
 
 	// push to stg_conf
@@ -484,7 +616,7 @@ int FPGATable::emitRAMConf(const IR::PathExpression* act, struct StageConf *stg_
 }
 
 
-bool FPGATable::emitConf(struct StageConf *stg_conf, int st_stg, int &nxt_st_stg) {
+bool FPGATable::emitConf(struct StageConf *stg_conf, int &st_stg, int &nxt_st_stg) {
 	bool ret = true;
 
 	if (!emitKeyConf()) {
@@ -503,6 +635,8 @@ bool FPGATable::emitConf(struct StageConf *stg_conf, int st_stg, int &nxt_st_stg
 		if (nxt_st_stg < ed_stg) {
 			nxt_st_stg = ed_stg;
 		}
+		std::cout << entry.first;
+		std::cout << st_stg << " " << ed_stg << " " << nxt_st_stg << std::endl;
 		for (auto stg=st_stg; stg<ed_stg; stg++) {
 			stg_conf[stg].flag = 1;
 			stg_conf[stg].keyconf = keyConf;

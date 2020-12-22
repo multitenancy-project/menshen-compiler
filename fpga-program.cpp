@@ -25,6 +25,7 @@ bool FPGAProgram::build() {
 	return ::errorCount()==0;
 }
 
+// [for debug use]
 void FPGAProgram::pr_conf() {
 	auto &hdr_allocation = control->hdrAccess->hdr_phv_allocation;
 	auto stg_conf = control->stg_conf; // 5 stages

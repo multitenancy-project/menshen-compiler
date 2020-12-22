@@ -93,6 +93,9 @@ bool FPGAControl::build() {
 	//
 	auto ctrlBodyProcess = new ControlBodyProcess(this);
 	controlBlock->container->body->apply(*ctrlBodyProcess);
+	for (auto ctrlLocal : controlBlock->container->controlLocals) {
+		ctrlLocal->apply(*ctrlBodyProcess);
+	}
 
 	// get applied tables
 	for (auto k : applied_tables) {
