@@ -19,9 +19,9 @@ class FPGAProgram;
 class FPGAControl;
 class FPGATable;
 
-void run_generate_stateful_conf(const FPGAOptions& options);
+void run_generate_stateful_conf(const FPGAOptions* options);
 
-void run_fpga_backend(const FPGAOptions& options, const IR::ToplevelBlock* toplevel,
+void run_fpga_backend(const FPGAOptions* options, const IR::ToplevelBlock* toplevel,
 						P4::ReferenceMap* refMap, P4::TypeMap* typeMap);
 
 } // namspace FPGA

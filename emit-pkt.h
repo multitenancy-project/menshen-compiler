@@ -17,11 +17,11 @@ namespace FPGA {
 
 class EmitConfPkt {
 public:
-	EmitConfPkt (int vid, cstring filename, cstring outputfile,
+	EmitConfPkt (int if_sys, int vid, cstring filename, cstring outputfile,
 					std::map<cstring, int> fields,
 					std::map<cstring, struct PHVContainer> allocation,
 					struct StageConf stgs[5]) : 
-				vid(vid), confFilename(filename), outputfile(outputfile),
+				if_sys(if_sys), vid(vid), confFilename(filename), outputfile(outputfile),
 				fields_bitsize_from_start(fields),
 				hdr_phv_allocation(allocation) {
 		memcpy(stg_conf, stgs, 5*sizeof(struct StageConf));
@@ -50,6 +50,7 @@ public:
 	// generate stateful conf only
 	virtual void emitStatefulConf();
 
+	int if_sys;
 	int vid;
 	cstring confFilename;
 	cstring outputfile;

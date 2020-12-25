@@ -76,7 +76,7 @@ int main(int argc, char *const argv[]) {
 
 	if (options.if_stateful_only!=-1) {
 		// generate stateful conf pkt only
-		FPGA::run_generate_stateful_conf(options);
+		FPGA::run_generate_stateful_conf(&options);
 		return 0;
 	}
 	// 
@@ -118,7 +118,7 @@ int main(int argc, char *const argv[]) {
 	toplevel = evaluator->getToplevelBlock();
 
 	// parser graphs
-	FPGA::run_fpga_backend(options, toplevel, &refMap, &typeMap);
+	FPGA::run_fpga_backend(&options, toplevel, &refMap, &typeMap);
 
 #if 0
 	//

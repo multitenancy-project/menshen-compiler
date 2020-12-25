@@ -49,6 +49,7 @@
 namespace FPGA {
 
 const std::set<cstring> const_std_metadata = {"port","discard"};
+const std::set<cstring> const_sys_tbls = {"sys_fwd_on_ip_dst_0"};
 
 struct PHVContainer {
 	uint8_t type: 2;

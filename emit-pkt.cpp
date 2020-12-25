@@ -167,12 +167,19 @@ static void printExtractorConf(struct KeyExtractConf &key_conf, std::ostream &os
 }
 
 static void printCAMConf(struct LookupCAMConf &cam_conf, std::ostream &os, int stage, 
-							int entry_ind) {
+							int entry_ind, uint32_t vid) {
 	int i, j;
 	unsigned char *b;
 	unsigned char byte;
 	os << "CAMConf ";
 	printStageInd(os, MODULE_LOOKUP, stage, entry_ind, 0, 0);
+	// print vid, 4 bit
+	b = (unsigned char *)&vid;
+	for (i=3; i>=0; i--) {
+		byte = (b[0] >> i) & 1;
+		os << +byte;
+	}
+	// print data
 	b = (unsigned char *)&cam_conf.op_6B_1;
 	for (i=5; i>=0; i--) {
 		for(j=7; j>=0; j--) {
@@ -192,7 +199,7 @@ static void printCAMConf(struct LookupCAMConf &cam_conf, std::ostream &os, int s
 	printBits(sizeof(uint16_t), &cam_conf.op_2B_1, os);
 	printBits(sizeof(uint16_t), &cam_conf.op_2B_2, os);
 	os << "11111"; // default cond configurations
-	os << "000\n"; // append to 200bit = 25B
+	os << "0000000\n"; // append to 208bit = 26B
 }
 
 /*
@@ -321,7 +328,7 @@ void EmitConfPkt::emitStageConf() {
 						stg_conf[stg].ramconf.size());
 			}
 			for (size_t i=0; i<stg_conf[stg].camconf.size(); i++) {
-				printCAMConf(stg_conf[stg].camconf.at(i), outStream, stg, stg_ind[stg]);
+				printCAMConf(stg_conf[stg].camconf.at(i), outStream, stg, stg_ind[stg], vid);
 				printRAMConf(stg_conf[stg].ramconf.at(i), outStream, stg, stg_ind[stg]);
 				stg_ind[stg]++;
 				if (stg_ind[stg] > stg_max) {
@@ -386,7 +393,9 @@ void EmitConfPkt::emitConfPkt() {
 	// first build index for lkup cam and ram
 	buildConfIdx();
 	// then emit
-	emitParserConf();
+	if (if_sys == -1) {
+		emitParserConf();
+	}
 	emitStageConf();
 
 	//

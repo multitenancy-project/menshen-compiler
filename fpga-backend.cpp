@@ -19,13 +19,13 @@ inline void checkPHVAllocation(std::map<cstring, struct PHVContainer> &hdr_phv_a
 	}
 }
 
-void run_generate_stateful_conf(const FPGAOptions& options) {
-	auto emit_pkt_conf = new EmitConfPkt(options.confFilename, options.outputfile);
+void run_generate_stateful_conf(const FPGAOptions* options) {
+	auto emit_pkt_conf = new EmitConfPkt(options->confFilename, options->outputfile);
 
 	emit_pkt_conf->emitStatefulConf();
 }
 
-void run_fpga_backend(const FPGAOptions& options, const IR::ToplevelBlock* toplevel,
+void run_fpga_backend(const FPGAOptions* options, const IR::ToplevelBlock* toplevel,
 						P4::ReferenceMap* refMap, P4::TypeMap* typeMap) {
 
 	if (nullptr == toplevel) {
@@ -33,7 +33,7 @@ void run_fpga_backend(const FPGAOptions& options, const IR::ToplevelBlock* tople
 		return ;
 	}
 
-	auto fpga_program = new FPGAProgram(refMap, typeMap, toplevel->getProgram(),
+	auto fpga_program = new FPGAProgram(options, refMap, typeMap, toplevel->getProgram(),
 											toplevel);
 
 	fpga_program->build();
@@ -42,7 +42,7 @@ void run_fpga_backend(const FPGAOptions& options, const IR::ToplevelBlock* tople
 	// do phv allocation check
 	checkPHVAllocation(fpga_program->control->hdrAccess->hdr_phv_allocation);
 
-	auto emit_pkt_conf = new EmitConfPkt(options.vid, options.confFilename, options.outputfile,
+	auto emit_pkt_conf = new EmitConfPkt(options->if_sys, options->vid, options->confFilename, options->outputfile,
 									fpga_program->control->hdrAccess->visited_fields_bitsize_from_start,
 									fpga_program->control->hdrAccess->hdr_phv_allocation,
 									fpga_program->control->stg_conf);

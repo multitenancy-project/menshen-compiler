@@ -226,7 +226,6 @@ NormalOperation* ActionBodyProcess::process(const IR::MethodCallStatement* mcs) 
 			setOperation(hdr_phv_allocation, op, val_field, idx_field, OP_LOAD);
 		}
 		else if (method_name == "store") {
-			std::cout << "processing store\n";
 			// get args
 			val_val = process_expr(arg_1->expression, val_field);
 			idx_val = process_expr(arg_0->expression, idx_field);

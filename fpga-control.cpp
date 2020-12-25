@@ -62,9 +62,17 @@ bool ControlBodyProcess::preorder(const IR::Declaration_Instance* decl_ins) {
 }
 
 void ControlBodyProcess::processApply(const P4::ApplyMethod* method) {
-	auto table = control->getTable(method->object->getName().name);
+	auto tbl_name = method->object->getName().name;
+	auto table = control->getTable(tbl_name);
 	BUG_CHECK(table!=nullptr, "no table for %1%", method->expr);
-	control->applied_tables.push_back(table);
+	if (const_sys_tbls.find(tbl_name) != const_sys_tbls.end()) {
+		if (control->program->options->if_sys != -1) {
+			control->applied_tables.push_back(table);
+		}
+	}
+	else {
+		control->applied_tables.push_back(table);
+	}
 }
 
 //=====================================================================================
@@ -105,8 +113,15 @@ bool FPGAControl::build() {
 	}
 
 	// emit configuration for each table
-	int st_stg = 0;
-	int nxt_st_stg = -1;
+	int st_stg, nxt_st_stg;
+	if (program->options->if_sys != -1) {
+		st_stg = 4;
+		nxt_st_stg = 5;
+	}
+	else {
+		st_stg = 0;
+		nxt_st_stg = -1;
+	}
 	for (auto k : applied_tables) {
 		k->emitConf(stg_conf, st_stg, nxt_st_stg);
 		st_stg = nxt_st_stg;

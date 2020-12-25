@@ -10,6 +10,7 @@
 //
 #include "parser-graphs.h"
 #include "fpga-model.h"
+#include "options.h"
 
 namespace FPGA {
 
@@ -20,6 +21,7 @@ class FPGATable;
 class FPGAProgram {
 public:
 
+	const FPGAOptions* options;
 	P4::ReferenceMap* refMap;
 	P4::TypeMap* typeMap;
 	const IR::P4Program* program;
@@ -28,9 +30,10 @@ public:
 	FPGAModel &model;
 	FPGAControl *control;
 
-	FPGAProgram(P4::ReferenceMap *refMap, P4::TypeMap *typeMap, 
+	FPGAProgram(const FPGAOptions *options, P4::ReferenceMap *refMap, P4::TypeMap *typeMap, 
 				const IR::P4Program *program,
 				const IR::ToplevelBlock *toplevel) : 
+				options(options),
 				refMap(refMap), 
 				typeMap(typeMap), 
 				program(program),

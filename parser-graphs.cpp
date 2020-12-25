@@ -21,7 +21,9 @@ static bool PHVAllocation(std::map<cstring, int> &visited_hdr_fields,
 	 *		this allocation since only alu_4B_7 can only
 	 *		support stateful memory operations
 	 */
-	ind_2B = ind_4B = ind_6B = 0;
+	ind_2B = 0;
+	ind_4B = 1;
+	ind_6B = 0;
 
 	for (auto hdr_field : visited_hdr_fields) {
 		cnt++;
@@ -32,9 +34,16 @@ static bool PHVAllocation(std::map<cstring, int> &visited_hdr_fields,
 			ind_2B++;
 		}
 		else if (bitsize == 32) {
-			struct PHVContainer con = {PHV_CON_4B, ind_4B};
-			allocation.emplace(hdr_field.first, con);
-			ind_4B++;
+			if (hdr_field.first == "ip_dst_addr") {
+				// make sure we allocate "ip_dst_addr" to PHV 4B 0
+				struct PHVContainer con = {PHV_CON_4B, 0};
+				allocation.emplace(hdr_field.first, con);
+			}
+			else {
+				struct PHVContainer con = {PHV_CON_4B, ind_4B};
+				allocation.emplace(hdr_field.first, con);
+				ind_4B++;
+			}
 		}
 		else if (bitsize == 48) {
 			struct PHVContainer con = {PHV_CON_6B, ind_6B};
