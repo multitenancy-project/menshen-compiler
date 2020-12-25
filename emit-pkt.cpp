@@ -320,7 +320,14 @@ void EmitConfPkt::emitStageConf() {
 	}
 	for(auto stg=0; stg<5; stg++) {
 		if (stg_conf[stg].flag) { // valid stg conf
-			printExtractorConf(stg_conf[stg].keyconf, outStream, stg, vid);
+			if (if_sys != -1) {
+				for (auto lkup_vid : lkup_vid_to_idxrange) {
+					printExtractorConf(stg_conf[stg].keyconf, outStream, stg, lkup_vid.first);
+				}
+			}
+			else {
+				printExtractorConf(stg_conf[stg].keyconf, outStream, stg, vid);
+			}
 			if (stg_conf[stg].camconf.size() != stg_conf[stg].ramconf.size()) {
 				BUG("size of cam and ram conf should be equal stg[%1%], %2%, %3%",
 						stg,
