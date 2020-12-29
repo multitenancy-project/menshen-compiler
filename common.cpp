@@ -14,29 +14,23 @@ std::ostream& operator<<(std::ostream& os, const struct PHVContainer& phv_con)
 std::ostream& operator << (std::ostream& os, const struct KeyExtractConf& key_con) {
 	if (key_con.flag) {
 		if (key_con.validity_flag & 0b000001)
-			os << "2B 2 valid\n";
-		if (key_con.validity_flag & 0b000010)
 			os << "2B 1 valid\n";
-		if (key_con.validity_flag & 0b000100)
-			os << "4B 2 valid\n";
-		if (key_con.validity_flag & 0b001000)
+		if (key_con.validity_flag & 0b000010)
 			os << "4B 1 valid\n";
-		if (key_con.validity_flag & 0b010000)
-			os << "6B 2 valid\n";
-		if (key_con.validity_flag & 0b100000)
+		if (key_con.validity_flag & 0b000100)
 			os << "6B 1 valid\n";
-		os << "2B selected first: " << +key_con.op_2B_1 << " second: " << +key_con.op_2B_2 << std::endl;
-		os << "4B selected first: " << +key_con.op_4B_1 << " second: " << +key_con.op_4B_2 << std::endl;
-		os << "6B selected first: " << +key_con.op_6B_1 << " second: " << +key_con.op_6B_2 << std::endl;
+		os << "2B selected: " << +key_con.op_2B_1 << std::endl;
+		os << "4B selected: " << +key_con.op_4B_1 << std::endl;
+		os << "6B selected: " << +key_con.op_6B_1 << std::endl;
 	}
 	return os;
 }
 
 std::ostream& operator << (std::ostream& os, const struct LookupCAMConf& cam_conf) {
 	if (cam_conf.flag) {
-		os << "2B val first: " << cam_conf.op_2B_1 << " second: " << cam_conf.op_2B_2 << std::endl;
-		os << "4B val first: " << cam_conf.op_4B_1 << " second: " << cam_conf.op_4B_2 << std::endl;
-		os << "6B val first: " << cam_conf.op_6B_1 << " second: " << cam_conf.op_6B_2 << std::endl;
+		os << "2B val first: " << cam_conf.op_2B_1 << std::endl;
+		os << "4B val first: " << cam_conf.op_4B_1 << std::endl;
+		os << "6B val first: " << cam_conf.op_6B_1 << std::endl;
 	}
 	return os;
 }

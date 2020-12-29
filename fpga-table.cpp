@@ -345,15 +345,9 @@ bool FPGATable::emitKeyConf() {
 		if (phv_allocation.type == PHV_CON_2B) {
 			if (phv_2B_ind==0) {
 				keyConf.op_2B_1 = phv_allocation.pos;
-				keyConf.validity_flag = keyConf.validity_flag | ((int)1 << 1 & 0b000010);
+				keyConf.validity_flag = keyConf.validity_flag | ((int)1 << 1 & 0b000001);
 				phv_2B_ind++;
 				keyInConf.emplace(k, 1);
-			}
-			else if (phv_2B_ind==1) {
-				keyConf.op_2B_2 = phv_allocation.pos;
-				keyConf.validity_flag = keyConf.validity_flag | ((int)1 << 0 & 0b000001);
-				phv_2B_ind++;
-				keyInConf.emplace(k, 2);
 			}
 			else {
 				BUG("not enough space for keys");
@@ -365,12 +359,6 @@ bool FPGATable::emitKeyConf() {
 				keyConf.validity_flag = keyConf.validity_flag | ((int)1 << 3 & 0b001000);
 				phv_4B_ind++;
 				keyInConf.emplace(k, 1);
-			}
-			else if (phv_4B_ind==1) {
-				keyConf.op_4B_2 = phv_allocation.pos;
-				keyConf.validity_flag = keyConf.validity_flag | ((int)1 << 2 & 0b000100);
-				phv_4B_ind++;
-				keyInConf.emplace(k, 2);
 			}
 			else {
 				BUG("not enough space for keys");

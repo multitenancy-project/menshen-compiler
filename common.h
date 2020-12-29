@@ -134,11 +134,8 @@ struct KeyExtractConf {
 	uint8_t flag : 1;
 	uint8_t validity_flag;
 	uint8_t op_2B_1;
-	uint8_t op_2B_2;
 	uint8_t op_4B_1;
-	uint8_t op_4B_2;
 	uint8_t op_6B_1;
-	uint8_t op_6B_2;
 	friend std::ostream& operator << (std::ostream& os, const struct KeyExtractConf& key_con);
 };
 
@@ -146,11 +143,8 @@ struct KeyExtractConf {
 struct LookupCAMConf {
 	uint8_t flag : 1;
 	uint16_t op_2B_1;
-	uint16_t op_2B_2;
 	uint32_t op_4B_1;
-	uint32_t op_4B_2;
 	uint64_t op_6B_1;
-	uint64_t op_6B_2;
 	uint8_t  cond;
 	friend std::ostream& operator << (std::ostream& os, const struct LookupCAMConf& cam_conf);
 };
