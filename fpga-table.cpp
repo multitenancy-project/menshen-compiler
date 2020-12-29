@@ -361,7 +361,7 @@ bool FPGATable::emitKeyConf() {
 		}
 		else if (phv_allocation.type == PHV_CON_4B) {
 			if (phv_4B_ind==0) {
-				keyConf.op_2B_1 = phv_allocation.pos;
+				keyConf.op_4B_1 = phv_allocation.pos;
 				keyConf.validity_flag = keyConf.validity_flag | ((int)1 << 3 & 0b001000);
 				phv_4B_ind++;
 				keyInConf.emplace(k, 1);
