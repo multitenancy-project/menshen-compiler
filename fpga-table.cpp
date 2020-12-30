@@ -345,7 +345,7 @@ bool FPGATable::emitKeyConf() {
 		if (phv_allocation.type == PHV_CON_2B) {
 			if (phv_2B_ind==0) {
 				keyConf.op_2B_1 = phv_allocation.pos;
-				keyConf.validity_flag = keyConf.validity_flag | ((int)1 << 1 & 0b000001);
+				keyConf.validity_flag = keyConf.validity_flag | ((int)1 << 0 & 0b000001);
 				phv_2B_ind++;
 				keyInConf.emplace(k, 1);
 			}
@@ -355,8 +355,8 @@ bool FPGATable::emitKeyConf() {
 		}
 		else if (phv_allocation.type == PHV_CON_4B) {
 			if (phv_4B_ind==0) {
-				keyConf.op_2B_1 = phv_allocation.pos;
-				keyConf.validity_flag = keyConf.validity_flag | ((int)1 << 3 & 0b001000);
+				keyConf.op_4B_1 = phv_allocation.pos;
+				keyConf.validity_flag = keyConf.validity_flag | ((int)1 << 1 & 0b000010);
 				phv_4B_ind++;
 				keyInConf.emplace(k, 1);
 			}
@@ -367,15 +367,9 @@ bool FPGATable::emitKeyConf() {
 		else if (phv_allocation.type == PHV_CON_6B) {
 			if (phv_6B_ind==0) {
 				keyConf.op_6B_1 = phv_allocation.pos;
-				keyConf.validity_flag = keyConf.validity_flag | ((int)1 << 5 & 0b100000);
+				keyConf.validity_flag = keyConf.validity_flag | ((int)1 << 2 & 0b000100);
 				phv_6B_ind++;
 				keyInConf.emplace(k, 1);
-			}
-			else if (phv_6B_ind==1) {
-				keyConf.op_6B_2 = phv_allocation.pos;
-				keyConf.validity_flag = keyConf.validity_flag | ((int)1 << 4 & 0b010000);
-				phv_6B_ind++;
-				keyInConf.emplace(k, 2);
 			}
 			else {
 				BUG("not enough space for keys");
@@ -420,9 +414,6 @@ struct LookupCAMConf FPGATable::emitCAMConf(const IR::ListExpression* list_expr)
 			if (key_pos == 1) {
 				camConf.op_2B_1 = val;
 			}
-			else if (key_pos == 2) {
-				camConf.op_2B_2 = val;
-			}
 			else {
 				BUG("impossible key_pos %d", key_pos);
 			}
@@ -431,9 +422,6 @@ struct LookupCAMConf FPGATable::emitCAMConf(const IR::ListExpression* list_expr)
 			if (key_pos == 1) {
 				camConf.op_4B_1 = val;
 			}
-			else if (key_pos == 2) {
-				camConf.op_4B_2 = val;
-			}
 			else {
 				BUG("impossible key_pos %d", key_pos);
 			}
@@ -441,9 +429,6 @@ struct LookupCAMConf FPGATable::emitCAMConf(const IR::ListExpression* list_expr)
 		else if (bitsize == 48) {
 			if (key_pos == 1) {
 				camConf.op_6B_1 = val;
-			}
-			else if (key_pos == 2) {
-				camConf.op_6B_2 = val;
 			}
 			else {
 				BUG("impossible key_pos %d", key_pos);

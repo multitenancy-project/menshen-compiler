@@ -108,17 +108,7 @@ static void printExtractorConf(struct KeyExtractConf &key_conf, std::ostream &os
 		byte = (b[0] >> j) & 1;
 		os << +byte;
 	}
-	b = &key_conf.op_6B_2;
-	for (j=2; j>=0; j--) {
-		byte = (b[0] >> j) & 1;
-		os << +byte;
-	}
 	b = &key_conf.op_4B_1;
-	for (j=2; j>=0; j--) {
-		byte = (b[0] >> j) & 1;
-		os << +byte;
-	}
-	b = &key_conf.op_4B_2;
 	for (j=2; j>=0; j--) {
 		byte = (b[0] >> j) & 1;
 		os << +byte;
@@ -128,42 +118,25 @@ static void printExtractorConf(struct KeyExtractConf &key_conf, std::ostream &os
 		byte = (b[0] >> j) & 1;
 		os << +byte;
 	}
-	b = &key_conf.op_2B_2;
-	for (j=2; j>=0; j--) {
-		byte = (b[0] >> j) & 1;
-		os << +byte;
-	}
-	os << "000000\n"; // append to 24b = 3B
+	os << "0000000\n"; // append to 16b = 2B
 
 	// Mask conf
 	os << "CAMMaskConf ";
 	printStageInd(os, MODULE_EXTRACTOR, stage, vid, 1, 0);
-	if (key_conf.validity_flag & 0b100000) 
+	if (key_conf.validity_flag & 0b000100) 
 		os << "000000000000000000000000000000000000000000000000";
 	else
 		os << "111111111111111111111111111111111111111111111111";
-	if (key_conf.validity_flag & 0b010000)
-		os << "000000000000000000000000000000000000000000000000";
-	else
-		os << "111111111111111111111111111111111111111111111111";
-	if (key_conf.validity_flag & 0b001000)
-		os << "00000000000000000000000000000000";
-	else 
-		os << "11111111111111111111111111111111";
-	if (key_conf.validity_flag & 0b000100)
-		os << "00000000000000000000000000000000";
-	else 
-		os << "11111111111111111111111111111111";
 	if (key_conf.validity_flag & 0b000010)
-		os << "0000000000000000";
+		os << "00000000000000000000000000000000";
 	else 
-		os << "1111111111111111";
+		os << "11111111111111111111111111111111";
 	if (key_conf.validity_flag & 0b000001)
 		os << "0000000000000000";
 	else 
 		os << "1111111111111111";
 	os << "11111"; // last 5 cond bits
-	os << "000\n"; // append to 200bit = 25B
+	os << "000\n"; // append to 104bit = 13B
 }
 
 static void printCAMConf(struct LookupCAMConf &cam_conf, std::ostream &os, int stage, 
@@ -187,19 +160,10 @@ static void printCAMConf(struct LookupCAMConf &cam_conf, std::ostream &os, int s
 			os << +byte;
 		}
 	}
-	b = (unsigned char *)&cam_conf.op_6B_2;
-	for (i=5; i>=0; i--) {
-		for(j=7; j>=0; j--) {
-			byte = (b[i] >> j) & 1;
-			os << +byte;
-		}
-	}
 	printBits(sizeof(uint32_t), &cam_conf.op_4B_1, os);
-	printBits(sizeof(uint32_t), &cam_conf.op_4B_2, os);
 	printBits(sizeof(uint16_t), &cam_conf.op_2B_1, os);
-	printBits(sizeof(uint16_t), &cam_conf.op_2B_2, os);
-	os << "11111"; // default cond configurations
-	os << "0000000\n"; // append to 208bit = 26B
+	os << "11111"; // default cond configurations 4+48+32+16+5=105
+	os << "0000000\n"; // append to 112bit = 14B
 }
 
 /*
