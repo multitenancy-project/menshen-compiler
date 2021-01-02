@@ -54,6 +54,7 @@ std::ostream& operator << (std::ostream& os, const struct LookupRAMConf& ram_con
 			case OP_LOADD_BIN: os << "LOADD\n"; break;
 			case OP_PORT_BIN: os << "PORT\n"; break;
 			case OP_DISCARD_BIN: os << "DISCARD\n"; break;
+			case OP_SET_BIN: os << "SET\n"; break;
 		}
 		if (ram_conf.op_type == OP_PORT_BIN ||
 				ram_conf.op_type == OP_DISCARD_BIN) {
@@ -62,7 +63,7 @@ std::ostream& operator << (std::ostream& os, const struct LookupRAMConf& ram_con
 		else {
 			auto pos_1 = ram_conf.op_a & 0x7;
 			auto type_1 = (ram_conf.op_a >> 3) & 0x3;
-			os << "opernd A, type: " << type_1 << " pos :" << pos_1 << std::endl;
+			os << "operand A, type: " << type_1 << " pos :" << pos_1 << std::endl;
 			auto pos_2 = (ram_conf.op_b >> 11) & 0x7;
 			auto type_2 = (ram_conf.op_b >> 14) & 0x3;
 			switch (ram_conf.op_type) {
@@ -70,6 +71,7 @@ std::ostream& operator << (std::ostream& os, const struct LookupRAMConf& ram_con
 				case OP_ADD_BIN: os << "opernd B, type: " << type_2 << " pos :" << pos_2 << std::endl; break;
 				case OP_SUBI_BIN:
 				case OP_ADDI_BIN: os << "operand B, val: " << +ram_conf.op_b << std::endl; break;
+				case OP_SET_BIN: os << "operand B, val: " << +ram_conf.op_b << std::endl; break;
 			}
 		}
 	}

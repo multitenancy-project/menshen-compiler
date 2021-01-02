@@ -27,6 +27,7 @@ public:
 
 	virtual int process_expr(const IR::Expression* expr, cstring &field);
 	virtual void process_expr(const IR::Operation_Binary* expr, struct Operation &op);
+	virtual void process_expr(const IR::Constant* cnst, struct Operation &op);
 	virtual IfstatementOperation* process(const IR::IfStatement* ifs);
 	virtual NormalOperation* process(const IR::AssignmentStatement* assignstat);
 	virtual NormalOperation* process(const IR::MethodCallStatement* mcs);

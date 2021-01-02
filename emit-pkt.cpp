@@ -268,17 +268,37 @@ void EmitConfPkt::emitParserConf() {
 		par_conf.parse_action[i] = 0;
 	}
 
-	int par_ind = 0;
-	outStream << "Parser ";
-	printStageInd(outStream, MODULE_PARSER, 0, vid, 0, 0);
-	printStageInd(outStream, MODULE_DEPARSER, 0, vid, 0, 0);
+	// first part starts from 0 to 4
+	// second part starts from 5 to 9
+	int par_ind_1p = 0;
+	int par_ind_2p = 5;
 	for (auto k : hdr_phv_allocation) {
 		if (fields_bitsize_from_start.find(k.first) ==
 				fields_bitsize_from_start.end()) {
 			BUG("no such field %1%", k.first);
 		}
 
+		int par_ind = -1;
 		int bytes_from_zero = fields_bitsize_from_start[k.first]/8;
+		if (par_ind_1p >= 5 || par_ind_2p >= 10) {
+			BUG("no feasible parse actions");
+		}
+		if (bytes_from_zero >= 64) {
+			par_ind = par_ind_2p;
+			par_ind_2p += 1;
+		}
+		else {
+			// check
+			if ((bytes_from_zero>=58&&k.second.type==PHV_CON_6B) ||
+					(bytes_from_zero>=60&&k.second.type==PHV_CON_4B) ||
+					(bytes_from_zero>=62&&k.second.type==PHV_CON_2B)) {
+				BUG("no feasible first part parse action");
+			}
+			par_ind = par_ind_1p;
+			par_ind_1p += 1;
+		}
+
+		// get parse action
 		auto par_act = 0b1;
 		uint8_t phv_pos = k.second.pos;
 		uint8_t phv_type = k.second.type;
@@ -287,10 +307,14 @@ void EmitConfPkt::emitParserConf() {
 					| (phv_type << 4 & 0b00110000)
 					| (phv_pos << 1 & 0b00001110);
 
-		par_conf.parse_action[par_ind++] = par_act;
+		par_conf.parse_action[par_ind] = par_act;
 	}
 
+	// if all feasible
 	// output to outStream
+	outStream << "Parser ";
+	printStageInd(outStream, MODULE_PARSER, 0, vid, 0, 0);
+	printStageInd(outStream, MODULE_DEPARSER, 0, vid, 0, 0);
 	for (auto i=0; i<MAX_NUM_PARSE_ACTIONS; i++) {
 		printBits(sizeof(uint16_t), &par_conf.parse_action[i], outStream);
 	}

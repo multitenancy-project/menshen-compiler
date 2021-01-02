@@ -94,6 +94,12 @@ void ActionBodyProcess::process_expr(const IR::Operation_Binary* expr, struct Op
 	}
 }
 
+void ActionBodyProcess::process_expr(const IR::Constant* cnst, struct Operation &op) {
+	op.type = OP_SET;
+	op.op_b_type = OP_TYPE_INT;
+	op.int_op = cnst->value.convert_to<int>();
+}
+
 NormalOperation* ActionBodyProcess::process(const IR::AssignmentStatement* assignstat) {
 	auto normal_op = new NormalOperation();
 	struct Operation op;
@@ -111,7 +117,7 @@ NormalOperation* ActionBodyProcess::process(const IR::AssignmentStatement* assig
 		}
 		else if (md_itr != const_std_metadata.end()) {
 			// op on metadata
-			op.op_res_type = OP_TYPE_MD;
+			op.op_res_type = OP_TYPE_STD_MD;
 		}
 		else {
 			BUG("not supported lval");
@@ -123,12 +129,17 @@ NormalOperation* ActionBodyProcess::process(const IR::AssignmentStatement* assig
 	// process right
 	if (op.op_res_type == OP_TYPE_PHV) {
 		auto r_expr = assignstat->right;
-		if (!r_expr->is<IR::Operation_Binary>()) {
+		if (r_expr->is<IR::Operation_Binary>()) {
+			process_expr(r_expr->to<IR::Operation_Binary>(), op);
+		}
+		else if (r_expr->is<IR::Constant>()) {
+			process_expr(r_expr->to<IR::Constant>(), op);
+		}
+		else {
 			BUG("not supported %1%", r_expr);
 		}
-		process_expr(r_expr->to<IR::Operation_Binary>(), op);
 	}
-	else if (op.op_res_type == OP_TYPE_MD) {
+	else if (op.op_res_type == OP_TYPE_STD_MD) {
 		auto r_expr = assignstat->right;
 		auto r_val = process_expr(r_expr, r_field);
 		if (r_val != -1) {
@@ -549,7 +560,7 @@ int FPGATable::emitRAMConf(const IR::PathExpression* act, struct StageConf *stg_
 				one_ram_conf->op_a = (normal_op->op.metadata_op>>16) & 0b11111;
 				one_ram_conf->op_b = (normal_op->op.metadata_op) & 0xffff;
 				// update prev stage
-				prev_stg_conf[res_pos] = op_stg;
+				prev_stg_conf[op_pos] = op_stg;
 				ed_stg = op_stg;
 				if (op_idx==0) {
 					st_stg = op_stg;
@@ -602,6 +613,27 @@ int FPGATable::emitRAMConf(const IR::PathExpression* act, struct StageConf *stg_
 						normal_op->op.type==OP_LOADD) {
 					prev_stg_conf[op_a_pos] = stg_op;
 				}
+				ed_stg = stg_op;
+				if (op_idx==0) {
+					st_stg = stg_op;
+				}
+			}
+			else if (normal_op->op.type==OP_SET) {
+				res_pos = get_phv_index(normal_op->op.op_res);
+				res_stg = prev_stg_conf[res_pos]+1;
+				int stg_op = res_stg;
+
+				auto one_ram_conf = &ram_conf[stg_op][res_pos];
+				modified_stg[stg_op] = true;
+				one_ram_conf->flag = 1;
+				one_ram_conf->op_type = OP_SET_BIN;
+				//
+				one_ram_conf->op_a = 0; // nothing to do with the first operand
+				BUG_CHECK(normal_op->op.op_b_type==OP_TYPE_INT, "should be OP_TYPE_INT");
+				one_ram_conf->op_b = normal_op->op.int_op;
+
+				// update prev stage
+				prev_stg_conf[res_pos] = stg_op;
 				ed_stg = stg_op;
 				if (op_idx==0) {
 					st_stg = stg_op;
