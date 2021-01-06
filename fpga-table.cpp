@@ -507,7 +507,7 @@ int FPGATable::emitRAMConf(const IR::PathExpression* act, struct StageConf *stg_
 	}
 	auto act_ops = act_operations[act];
 	if (act_ops.size() == 0) {
-		BUG("empty action is not supported now");
+		BUG("empty action %1% is not supported now", act);
 	}
 
 	int prev_stg_conf[25];

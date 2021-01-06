@@ -37,7 +37,7 @@ void run_fpga_backend(const FPGAOptions* options, const IR::ToplevelBlock* tople
 											toplevel);
 
 	fpga_program->build();
-	fpga_program->pr_conf();
+	// fpga_program->pr_conf();
 
 	// do phv allocation check
 	checkPHVAllocation(fpga_program->control->hdrAccess->hdr_phv_allocation);
