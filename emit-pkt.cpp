@@ -198,7 +198,9 @@ static void printCAMConf(struct LookupCAMConf &cam_conf, std::ostream &os, int s
 	printBits(sizeof(uint32_t), &cam_conf.op_4B_2, os);
 	printBits(sizeof(uint16_t), &cam_conf.op_2B_1, os);
 	printBits(sizeof(uint16_t), &cam_conf.op_2B_2, os);
-	os << "11111"; // default cond configurations
+	//
+	// os << "11111"; // default cond configurations
+	os << "00000"; // default cond configurations
 	os << "0000000\n"; // append to 208bit = 26B
 }
 
@@ -339,6 +341,10 @@ void EmitConfPkt::emitStageConf() {
 	int stg_idx = lkup_vid_to_idxrange[vid].first;
 	int stg_max = lkup_vid_to_idxrange[vid].second;
 	int stg_ind[5];
+	//
+	// struct LookupCAMConf dbg_camconf;
+	// std::array<struct LookupRAMConf, 25> dbg_ramconf;
+	//
 	for (int i=0; i<5; i++) {
 		stg_ind[i] = stg_idx;
 	}
@@ -359,15 +365,36 @@ void EmitConfPkt::emitStageConf() {
 						stg_conf[stg].ramconf.size());
 			}
 			for (size_t i=0; i<stg_conf[stg].camconf.size(); i++) {
-				printCAMConf(stg_conf[stg].camconf.at(i), outStream, stg, stg_ind[stg], vid);
-				printRAMConf(stg_conf[stg].ramconf.at(i), outStream, stg, stg_ind[stg]);
-				stg_ind[stg]++;
-				if (stg_ind[stg] > stg_max) {
-					BUG("stg ind larger than allocated %1%", stg_max);
+				// dbg_camconf = stg_conf[stg].camconf.at(i);
+				// dbg_ramconf = stg_conf[stg].ramconf.at(i);
+				if (if_sys != -1) {
+					for (auto lkup_vid : lkup_vid_to_idxrange) {
+						printCAMConf(stg_conf[stg].camconf.at(i), outStream, stg, stg_ind[stg], lkup_vid.first);
+						printRAMConf(stg_conf[stg].ramconf.at(i), outStream, stg, stg_ind[stg]);
+						stg_ind[stg]++;
+						if (stg_ind[stg] > stg_max) {
+							BUG("stg ind larger than allocated %1%", stg_max);
+						}
+					}
+				}
+				else {
+					printCAMConf(stg_conf[stg].camconf.at(i), outStream, stg, stg_ind[stg], vid);
+					printRAMConf(stg_conf[stg].ramconf.at(i), outStream, stg, stg_ind[stg]);
+					stg_ind[stg]++;
+					if (stg_ind[stg] > stg_max) {
+						BUG("stg ind larger than allocated %1%", stg_max);
+					}
 				}
 			}
 		}
 	}
+	// write other things
+	// for (int i=0; i<5; i++) {
+	// 	for (int ind=0; ind<256; ind++) {
+	// 		printCAMConf(dbg_camconf, outStream, i, ind, vid);
+	// 		printRAMConf(dbg_ramconf, outStream, i, ind);
+	// 	}
+	// }
 }
 
 void EmitConfPkt::buildConfIdx() {
