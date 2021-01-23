@@ -1,6 +1,3 @@
-# Makefile for the p416-merge
-
-# sources for p416-merge
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/version.h.cmake"
   "${CMAKE_CURRENT_BINARY_DIR}/version.h" @ONLY)
 

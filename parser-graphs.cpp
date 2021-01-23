@@ -16,7 +16,7 @@ static bool PHVAllocation(std::map<cstring, int> &visited_hdr_fields,
 	int cnt = 0;
 	uint8_t ind_2B, ind_4B, ind_6B;
 	/*
-	 * Tao: here we simply alloate PHV from index 0
+	 *		here we simply alloate PHV from index 0
 	 *		but remember that load/store will overwrite
 	 *		this allocation since only alu_4B_7 can only
 	 *		support stateful memory operations
@@ -102,7 +102,7 @@ void ParserGraphs::postorder(const IR::MethodCallStatement* mcs) {
 
 
 //====================================================================================
-// Tao: get visited header fields, some may be metadata
+// get visited header fields, some may be metadata
 bool HdrFieldsAccess::preorder(const IR::Member* member) {
 	if (visited_fields.find(member->member.name) == visited_fields.end()) {
 		visited_fields.insert(member->member.name);

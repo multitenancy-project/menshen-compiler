@@ -107,22 +107,6 @@ public:
 
 	bool merge();
 	void output() {
-		// P4::ReferenceMap refMap_o;
-		// P4::TypeMap typeMap_o;
-		// P4::ParseAnnotations parseAnnotations_o;
-		// auto evaluator = new P4::EvaluatorPass(&refMap_o, &typeMap_o);
-
-		// PassManager passes = {
-		// 	new P4::ParseAnnotationBodies(&parseAnnotations_o, &typeMap_o),
-		// 	new P4::ResolveReferences(&refMap_o, true),  // check shadowing
-		// 	new P4::ResolveReferences(&refMap_o),  // check shadowing
-		// 	// new P4::CheckNamedArgs(),
-		// 	new P4::TypeInference(&refMap_o, &typeMap_o, false),  // insert casts
-		// 	new P4::ExpandEmit(&refMap_o, &typeMap_o), // expand emit hdr
-		// 	evaluator,
-		// };
-		// results[0] = results[0]->apply(passes);
-		
 		// write to the OUTPUT_FILENAME (merged.p4)
 		auto ostream = openFile("merged.p4", false);
 		FPGAToP4 top4(ostream, false);

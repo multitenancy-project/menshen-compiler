@@ -12,8 +12,6 @@ static const int MODULE_LOOKUP = 2;
 static const int MODULE_ACTION_ENGINE = 3;
 static const int MODULE_DEPARSER = 5;
 
-// some shit helper functions
-
 static void printBits(size_t const size, void const * const ptr, std::ostream &os) {
 	unsigned char *b = (unsigned char*) ptr;
 	unsigned char byte;
@@ -203,7 +201,6 @@ static void printCAMConf(struct LookupCAMConf &cam_conf, std::ostream &os, int s
 	printBits(sizeof(uint16_t), &cam_conf.op_2B_2, os);
 	// 12+192+1 = 205
 	//
-	// os << "11111"; // default cond configurations
 	os << "0"; // default cond configurations
 	os << "000\n"; // append to 208bit = 26B
 }
@@ -264,7 +261,7 @@ static void printRAMConf(std::array<struct LookupRAMConf, 25> &ram,
  *  [3:1]	pos
  *  [0]		validity bit
  *
- *  16*10+20*5 = 260
+ *  16*10 = 160
  */
 
 void EmitConfPkt::emitParserConf() {

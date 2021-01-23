@@ -10,13 +10,6 @@
 namespace FPGA {
 
 bool Merger::preorder(IR::P4Control *ctrl) {
-	// auto cb = mg->toplevels[0]->getMain()->findParameterValue(mg->model.sw.ingress.name)->to<IR::ControlBlock>();
-	// std::cout << ctrl << std::endl;
-	// std::cout << "hhhhhhh\n";
-	// std::cout << cb->container << std::endl;
-	// BUG_CHECK(ctrl==cb->container, "is something wrong here?");
-	// printf("%p %p %p\n", ctrl, cb->container, cb);
-
 	for (size_t i=1; i<mg->progs.size(); i++) {
 		auto prog_ctrl = mg->toplevels.at(i)->getMain()->findParameterValue(mg->model.sw.ingress.name)
 								->to<IR::ControlBlock>()->container;
@@ -53,17 +46,6 @@ bool MergeProgs::merge() {
 	// pass frontend
 	auto hook = options.getDebugHook();
 	for (auto program : progs) {
-		// P4::P4COptionPragmaParser optionsPragmaParser;
-		// program->apply(P4::ApplyOptionsPragmas(optionsPragmaParser));
-
-		// P4::FrontEnd frontend;
-		// frontend.addDebugHook(hook);
-		// program = frontend.run(options, program);
-
-		// if (::errorCount() > 0) {
-		// 	::error("frontend error");
-		// 	return false;
-		// }
 
 		P4::ReferenceMap refMap;
 		P4::TypeMap typeMap;
