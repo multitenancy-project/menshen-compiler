@@ -133,7 +133,9 @@ static void printExtractorConf(struct KeyExtractConf &key_conf, std::ostream &os
 		byte = (b[0] >> j) & 1;
 		os << +byte;
 	}
-	os << "000000\n"; // append to 24b = 3B
+	// append one cond
+	os << "00110000000000000000";
+	os << "00\n"; // append to 40b = 5B
 
 	// Mask conf
 	os << "CAMMaskConf ";
@@ -162,8 +164,9 @@ static void printExtractorConf(struct KeyExtractConf &key_conf, std::ostream &os
 		os << "0000000000000000";
 	else 
 		os << "1111111111111111";
-	os << "11111"; // last 5 cond bits
-	os << "000\n"; // append to 200bit = 25B
+	// 192+1 = 193 bits
+	os << "1"; // last 1 cond bits
+	os << "0000000\n"; // append to 200bit = 25B
 }
 
 static void printCAMConf(struct LookupCAMConf &cam_conf, std::ostream &os, int stage, 
@@ -173,9 +176,9 @@ static void printCAMConf(struct LookupCAMConf &cam_conf, std::ostream &os, int s
 	unsigned char byte;
 	os << "CAMConf ";
 	printStageInd(os, MODULE_LOOKUP, stage, entry_ind, 0, 0);
-	// print vid, 4 bit
+	// print vid, 12 bit
 	b = (unsigned char *)&vid;
-	for (i=3; i>=0; i--) {
+	for (i=11; i>=0; i--) {
 		byte = (b[0] >> i) & 1;
 		os << +byte;
 	}
@@ -198,10 +201,11 @@ static void printCAMConf(struct LookupCAMConf &cam_conf, std::ostream &os, int s
 	printBits(sizeof(uint32_t), &cam_conf.op_4B_2, os);
 	printBits(sizeof(uint16_t), &cam_conf.op_2B_1, os);
 	printBits(sizeof(uint16_t), &cam_conf.op_2B_2, os);
+	// 12+192+1 = 205
 	//
 	// os << "11111"; // default cond configurations
-	os << "00000"; // default cond configurations
-	os << "0000000\n"; // append to 208bit = 26B
+	os << "0"; // default cond configurations
+	os << "000\n"; // append to 208bit = 26B
 }
 
 /*
@@ -322,15 +326,16 @@ void EmitConfPkt::emitParserConf() {
 	}
 
 	// default cond configuration, since we do not use it now
-	struct CondConf cond;
-	cond.type = 3;
-	cond.op_a = cond.op_b = 0;
-	printCondConf(cond, outStream);
-	printCondConf(cond, outStream);
-	printCondConf(cond, outStream);
-	printCondConf(cond, outStream);
-	printCondConf(cond, outStream);
-	outStream << "0000\n"; // append to 264b = 33B
+	// struct CondConf cond;
+	// cond.type = 3;
+	// cond.op_a = cond.op_b = 0;
+	// printCondConf(cond, outStream);
+	// printCondConf(cond, outStream);
+	// printCondConf(cond, outStream);
+	// printCondConf(cond, outStream);
+	// printCondConf(cond, outStream);
+	// outStream << "0000\n"; // append to 264b = 33B
+	outStream << "\n";
 }
 
 void EmitConfPkt::emitStageConf() {
