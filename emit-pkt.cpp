@@ -70,30 +70,6 @@ static void printStageInd(std::ostream &os, int module, int stg_num, int entry_i
 		os << std::endl;
 }
 
-static void printCondConf(struct CondConf &cond_conf, std::ostream &os) { 
-	int j;
-	unsigned char *b;
-	unsigned char byte;
-	// print type
-	b = &cond_conf.type;
-	for (j=3; j>=0; j--) {
-		byte = (b[0] >> j) & 1;
-		os << +byte;
-	}
-
-	b = (unsigned char *)&cond_conf.op_a;
-	for (j=7; j>=0; j--) {
-		byte = (b[0] >> j) & 1;
-		os << +byte;
-	}
-
-	b = (unsigned char *)&cond_conf.op_b;
-	for (j=7; j>=0; j--) {
-		byte = (b[0] >> j) & 1;
-		os << +byte;
-	}
-}
-
 static void printExtractorConf(struct KeyExtractConf &key_conf, std::ostream &os, int stage, int vid) {
 	
 	int j;
@@ -352,6 +328,7 @@ void EmitConfPkt::emitStageConf() {
 	}
 	for(auto stg=0; stg<5; stg++) {
 		if (stg_conf[stg].flag) { // valid stg conf
+			// for each vid
 			if (if_sys != -1) {
 				for (auto lkup_vid : lkup_vid_to_idxrange) {
 					printExtractorConf(stg_conf[stg].keyconf, outStream, stg, lkup_vid.first);
@@ -450,7 +427,7 @@ void EmitConfPkt::emitStatefulConf() {
 }
 
 void EmitConfPkt::emitConfPkt() {
-	// first build index for lkup cam and ram
+	// first build index range for lkup cam and ram
 	buildConfIdx();
 	// then emit
 	if (if_sys == -1) {

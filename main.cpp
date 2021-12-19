@@ -49,7 +49,21 @@ int main(int argc, char *const argv[]) {
 		options.setInputFile();
 	}
 
+	if (options.files.size() == 0) {
+		// no input files, check whether it is for stateful mem conf
+		if (options.if_stateful_only != -1) {
+			FPGA::run_generate_stateful_conf(&options);
+			return 0;
+		}
+		else {
+			::error("no input files");
+			return 1;
+		}
+	}
+
 	std::vector<const IR::P4Program*> progs = FPGA::parseInputFiles(options);
+	//
+	// TODO: we should not have merge option here
 	if (options.merge_file != -1) {
 		auto mg = new FPGA::MergeProgs(progs, options);
 		if (mg->merge() == false) {
@@ -72,12 +86,6 @@ int main(int argc, char *const argv[]) {
 	if (options.confFilename==nullptr) {
 		::error("conf not set");
 		return 1;
-	}
-
-	if (options.if_stateful_only!=-1) {
-		// generate stateful conf pkt only
-		FPGA::run_generate_stateful_conf(&options);
-		return 0;
 	}
 	// 
 

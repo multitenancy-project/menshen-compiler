@@ -9,10 +9,8 @@ void FPGAOptions::setInputFile() {
 			files.push_back(file);
 		}
 	}
+	// we accept zero input files to generate other confs (e.g., stateful conf)
 	else {
-		::error("no input files");
-		usage();
-		exit(1);
 	}
 }
 

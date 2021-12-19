@@ -114,6 +114,7 @@ bool FPGAControl::build() {
 
 	// emit configuration for each table
 	int st_stg, nxt_st_stg;
+	// we only let sys conf be allocated to the last stage
 	if (program->options->if_sys != -1) {
 		st_stg = 4;
 		nxt_st_stg = 5;

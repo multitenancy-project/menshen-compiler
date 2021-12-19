@@ -11,7 +11,8 @@ bool FPGAProgram::build() {
 	auto parserGraphs = new ParserGraphs(refMap, typeMap);
 	toplevel->getProgram()->apply(*parserGraphs);
 	// build accesed hdr and allocate PHV containers
-	auto hdrFieldsAccess = new HdrFieldsAccess(parserGraphs->state_extracted_type);
+	auto hdrFieldsAccess = new HdrFieldsAccess(options, 
+									parserGraphs->state_extracted_type);
 	toplevel->getProgram()->apply(*hdrFieldsAccess);
 	hdrFieldsAccess->analyze();
 	// build the control part

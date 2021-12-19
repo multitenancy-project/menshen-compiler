@@ -1,5 +1,6 @@
 #include "parser-graphs.h"
 #include "FPGA-backend/common.h"
+#include "FPGA-backend/options.h"
 #include "ir/ir-generated.h"
 
 namespace FPGA {
@@ -8,7 +9,8 @@ static const int NUM_PHV_TYPE = 3;
 static const int NUM_PHV_PER_TYPE = 8;
 static const int MAX_NUM_PHV_PARSE_ACTIONS = 10;
 
-static bool PHVAllocation(std::map<cstring, int> &visited_hdr_fields,
+static bool PHVAllocation(const FPGAOptions *options,
+		std::map<cstring, int> &visited_hdr_fields,
 		std::map<cstring, int> &hdr_fields_bitsize,
 		std::map<cstring, struct PHVContainer> &allocation) {
 
@@ -24,6 +26,12 @@ static bool PHVAllocation(std::map<cstring, int> &visited_hdr_fields,
 	ind_2B = 0;
 	ind_4B = 1;
 	ind_6B = 0;
+
+	// hardcode to allocate the PHV 4B 0 to "ip_dst_addr"
+	if (options->if_sys == -1) {
+		struct PHVContainer con = {PHV_CON_4B, 0};
+		allocation.emplace("ip_dst_addr", con);
+	}
 
 	for (auto hdr_field : visited_hdr_fields) {
 		cnt++;
@@ -134,7 +142,8 @@ void HdrFieldsAccess::analyze() {
 		}
 	}
 	//
-	auto res = PHVAllocation(visited_fields_bitsize_from_start,
+	auto res = PHVAllocation(options,
+								visited_fields_bitsize_from_start,
 								hdr_fields_bitsize,
 								hdr_phv_allocation);
 
