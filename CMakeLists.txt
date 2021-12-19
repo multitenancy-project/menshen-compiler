@@ -1,14 +1,9 @@
-# Makefile for the p416-merge
-
-# sources for p416-merge
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/version.h.cmake"
   "${CMAKE_CURRENT_BINARY_DIR}/version.h" @ONLY)
 
 set (P4C_FPGA_SRCS
 	common.cpp
 	common.h
-	merge.cpp
-	merge.h
 	parser-graphs.cpp
 	parser-graphs.h
 	fpga-top4.cpp

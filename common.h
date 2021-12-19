@@ -118,7 +118,6 @@ public:
 /*
  *  for configuration generation
  */
-// Tao: we seperate CondConf and ParserConf here
 // TODO: the cond we have now can only support 1 action
 struct CondConf {
 	uint8_t flag : 1;

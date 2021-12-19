@@ -14,6 +14,7 @@
 #include "p4/typeMap.h"
 
 #include "common.h"
+#include "options.h"
 
 namespace FPGA {
 
@@ -38,7 +39,7 @@ protected:
 public:
 
 	ParserGraphs(P4::ReferenceMap *refMap, P4::TypeMap *typeMap) :
-		            refMap(refMap), typeMap(typeMap) {
+					refMap(refMap), typeMap(typeMap) {
 		CHECK_NULL(refMap);
 		CHECK_NULL(typeMap);
 		setName("ParserGraphs");
@@ -56,14 +57,16 @@ public:
 
 class HdrFieldsAccess : public Inspector {
 public:
-	HdrFieldsAccess(std::vector<const IR::Type_Header*> extracted_hdrs) :
-					 	extracted_hdrs(extracted_hdrs) {
+	HdrFieldsAccess(const FPGAOptions* options, 
+					std::vector<const IR::Type_Header*> extracted_hdrs) :
+					 	options(options), extracted_hdrs(extracted_hdrs) {
 		setName("HdrFieldsAccess");
 	}
 
 	bool preorder(const IR::Member* member) override;
 	void analyze();
 	//
+	const FPGAOptions* options;
 	std::vector<const IR::Type_Header*> extracted_hdrs;
 	std::set<cstring> visited_fields;
 	std::map<cstring, int> visited_fields_bitsize_from_start;

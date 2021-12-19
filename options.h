@@ -15,7 +15,6 @@ public:
 
 	int vid = -1;
 	int if_stateful_only = -1;
-	int merge_file = -1;
 	int if_sys = -1;
 	cstring confFilename;
 	cstring outputfile;
@@ -37,19 +36,12 @@ public:
 				},
 				"whether to generate stateful conf only.");
 
-		registerOption("--mergefile", "mergefile",
-				[this](const char* arg) {
-					merge_file = std::atoi(arg);
-					return true;
-				},
-				"whether to merge file only.");
-
 		registerOption("--onlysys", "onlysys",
 				[this](const char* arg) {
 					if_sys = std::atoi(arg);
 					return true;
 				},
-				"whether to merge file only.");
+				"whether processing sysem file only.");
 
 		registerOption("--conffile", "conffile",
 				[this](const char* arg) {

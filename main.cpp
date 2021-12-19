@@ -32,7 +32,6 @@
 
 // 
 #include "options.h"
-#include "merge.h"
 #include "fpga-backend.h"
 #include "parse-input-files.h"
 
@@ -49,17 +48,20 @@ int main(int argc, char *const argv[]) {
 		options.setInputFile();
 	}
 
-	std::vector<const IR::P4Program*> progs = FPGA::parseInputFiles(options);
-	if (options.merge_file != -1) {
-		auto mg = new FPGA::MergeProgs(progs, options);
-		if (mg->merge() == false) {
-			BUG("merge error");
-			exit(1);
+	if (options.files.size() == 0) {
+		// no input files, check whether it is for stateful mem conf
+		if (options.if_stateful_only != -1) {
+			FPGA::run_generate_stateful_conf(&options);
+			return 0;
 		}
-		mg->output();
-		return 0;
+		else {
+			::error("no input files");
+			return 1;
+		}
 	}
 
+	std::vector<const IR::P4Program*> progs = FPGA::parseInputFiles(options);
+	//
 	if (::errorCount() > 0) {
 		return 1;
 	}
@@ -72,12 +74,6 @@ int main(int argc, char *const argv[]) {
 	if (options.confFilename==nullptr) {
 		::error("conf not set");
 		return 1;
-	}
-
-	if (options.if_stateful_only!=-1) {
-		// generate stateful conf pkt only
-		FPGA::run_generate_stateful_conf(&options);
-		return 0;
 	}
 	// 
 
@@ -119,63 +115,6 @@ int main(int argc, char *const argv[]) {
 
 	// parser graphs
 	FPGA::run_fpga_backend(&options, toplevel, &refMap, &typeMap);
-
-#if 0
-	//
-	const IR::P4Program* program = nullptr;
-	const IR::ToplevelBlock* toplevel = nullptr;
-
-	// parse input p4 program
-	program = P4::parseP4File(options);
-
-	if (program == nullptr || ::errorCount() > 0) {
-		::error("can not parse input p4 program!\n");
-		return 1;
-	}
-
-	P4::P4COptionPragmaParser optionsPragmaParser;
-	program->apply(P4::ApplyOptionsPragmas(optionsPragmaParser));
-
-	P4::FrontEnd frontend;
-	frontend.addDebugHook(hook);
-	program = frontend.run(options, program);
-
-	if (::errorCount() > 0) {
-		::error("frontend error");
-		return 1;
-	}
-
-	P4::ReferenceMap refMap;
-	P4::TypeMap typeMap;
-	P4::ParseAnnotations parseAnnotations;
-	refMap.setIsV1(options.isv1());
-
-	auto evaluator = new P4::EvaluatorPass(&refMap, &typeMap);
-	PassManager passes = {
-		// new P4::ParseAnnotationBodies(&parseAnnotations, &typeMap),
-		// new P4::ValidateParsedProgram(),
-		// new P4::CreateBuiltins(),
-		new P4::ResolveReferences(&refMap),
-		new P4::TypeInference(&refMap, &typeMap, false),
-		evaluator};
-
-	program = program->apply(passes);
-	LOG3(refMap);
-	LOG3(typeMap);
-	LOG3(evaluator->getToplevelBlock());
-	toplevel = evaluator->getToplevelBlock();
-
-	// parser graphs
-	FPGA::run_fpga_backend(options, toplevel, &refMap, &typeMap);
-
-	// auto main = evaluator->getToplevelBlock()->getMain();
-	// std::cout << main << std::endl;
-	// std::cout << v1model.sw.ingress.name << std::endl;
-	// auto ingress = main->findParameterValue(v1model.sw.ingress.name);
-	// std::cout << ingress << std::endl;
-	// auto ingress_name = ingress->to<IR::ControlBlock>()->container->name;
-	// std::cout << ingress_name << std::endl;
-#endif
 
     return 0;
 }

@@ -42,6 +42,7 @@ void run_fpga_backend(const FPGAOptions* options, const IR::ToplevelBlock* tople
 	// do phv allocation check
 	checkPHVAllocation(fpga_program->control->hdrAccess->hdr_phv_allocation);
 
+	// emit the configuration pkts from build
 	auto emit_pkt_conf = new EmitConfPkt(options->if_sys, options->vid, options->confFilename, options->outputfile,
 									fpga_program->control->hdrAccess->visited_fields_bitsize_from_start,
 									fpga_program->control->hdrAccess->hdr_phv_allocation,
