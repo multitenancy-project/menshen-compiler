@@ -4,8 +4,6 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/version.h.cmake"
 set (P4C_FPGA_SRCS
 	common.cpp
 	common.h
-	merge.cpp
-	merge.h
 	parser-graphs.cpp
 	parser-graphs.h
 	fpga-top4.cpp

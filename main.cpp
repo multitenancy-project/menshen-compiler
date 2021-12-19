@@ -32,7 +32,6 @@
 
 // 
 #include "options.h"
-#include "merge.h"
 #include "fpga-backend.h"
 #include "parse-input-files.h"
 
@@ -63,17 +62,6 @@ int main(int argc, char *const argv[]) {
 
 	std::vector<const IR::P4Program*> progs = FPGA::parseInputFiles(options);
 	//
-	// TODO: we should not have merge option here
-	if (options.merge_file != -1) {
-		auto mg = new FPGA::MergeProgs(progs, options);
-		if (mg->merge() == false) {
-			BUG("merge error");
-			exit(1);
-		}
-		mg->output();
-		return 0;
-	}
-
 	if (::errorCount() > 0) {
 		return 1;
 	}
