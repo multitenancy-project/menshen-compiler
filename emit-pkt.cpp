@@ -252,29 +252,40 @@ void EmitConfPkt::emitParserConf() {
 	int par_ind_1p = 0;
 	int par_ind_2p = 5;
 	for (auto k : hdr_phv_allocation) {
-		if (fields_bitsize_from_start.find(k.first) ==
-				fields_bitsize_from_start.end()) {
-			BUG("no such field %1%", k.first);
-		}
-
 		int par_ind = -1;
-		int bytes_from_zero = fields_bitsize_from_start[k.first]/8;
-		if (par_ind_1p >= 5 || par_ind_2p >= 10) {
-			BUG("no feasible parse actions");
-		}
-		if (bytes_from_zero >= 64) {
-			par_ind = par_ind_2p;
-			par_ind_2p += 1;
-		}
-		else {
-			// check
-			if ((bytes_from_zero>=58&&k.second.type==PHV_CON_6B) ||
-					(bytes_from_zero>=60&&k.second.type==PHV_CON_4B) ||
-					(bytes_from_zero>=62&&k.second.type==PHV_CON_2B)) {
-				BUG("no feasible first part parse action");
+		int bytes_from_zero;
+		if (k.first == "ip_dst_addr") {
+			if (par_ind_1p >= 5) {
+				BUG("no feasible parse actions");
 			}
 			par_ind = par_ind_1p;
+			bytes_from_zero = 34;
 			par_ind_1p += 1;
+		}
+		else {
+			if (fields_bitsize_from_start.find(k.first) ==
+					fields_bitsize_from_start.end()) {
+				BUG("no such field %1%", k.first);
+			}
+
+			bytes_from_zero = fields_bitsize_from_start[k.first]/8;
+			if (par_ind_1p >= 5 || par_ind_2p >= 10) {
+				BUG("no feasible parse actions");
+			}
+			if (bytes_from_zero >= 64) {
+				par_ind = par_ind_2p;
+				par_ind_2p += 1;
+			}
+			else {
+				// check
+				if ((bytes_from_zero>=58&&k.second.type==PHV_CON_6B) ||
+						(bytes_from_zero>=60&&k.second.type==PHV_CON_4B) ||
+						(bytes_from_zero>=62&&k.second.type==PHV_CON_2B)) {
+					BUG("no feasible first part parse action");
+				}
+				par_ind = par_ind_1p;
+				par_ind_1p += 1;
+			}
 		}
 
 		// get parse action
