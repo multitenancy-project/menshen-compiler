@@ -15,7 +15,7 @@ git checkout cc0741d722c2fc99513716e86170d70d000503d6
 
 ```
 cd p4c/backends
-git clone git@github.com:multitenancy-project/our-FPGA-backend.git FPGA-backend
+git clone git@github.com:multitenancy-project/p4c-backend-ext.git FPGA-backend
 ```
 
 3. add the following to the line 276 of `p4c/CMakeLists.txt`
